@@ -1,0 +1,43 @@
+id: custom_stm32h723_usb
+name: Custom STM32H723 USB Mainboard
+vendor: Custom
+family: mainboard
+source:
+  - custom
+match:
+  chips:
+    - stm32h723xx
+  mcu_name_hints:
+    - mcu
+    - mainboard
+  transports:
+    - usb
+build:
+  import_config: true
+  firmware: klipper
+  communication: usb
+bootloader:
+  firmware: katapult
+  type: katapult
+  architecture: stm32
+  processor: STM32H723
+  communication: usb
+  support_bootloader_entry: true
+initial_flash:
+  method: dfu_util
+  bootloader: katapult
+  dfu_vid_pid: "0483:df11"
+  artifact: "~/katapult/out/katapult.bin"
+  command: "sudo dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+  fallback_command: "sudo dfu-util -R -a 0 -s 0x08000000:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+  verify: "lsusb"
+update:
+  method: klipper_make_flash_usb
+  stop_klipper: true
+  flash: "make flash FLASH_DEVICE={{ serial }}"
+  start_klipper: true
+flash:
+  method: usb_katapult_or_make_flash
+notes:
+  mode: Placeholder until the user selects the exact mainboard profile.
+  caution: Exact mainboard profile should define processor, clock reference, and bootloader offset.

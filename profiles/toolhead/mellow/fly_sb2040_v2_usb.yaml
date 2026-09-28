@@ -1,0 +1,45 @@
+id: mellow_fly_sb2040_v2_usb
+name: Mellow Fly-SB2040 V2 USB
+vendor: Mellow
+family: toolhead
+source:
+  - https://mellow-3d.github.io/fly_sb2040_v2_klipper_usb.html
+  - https://mellow-3d.github.io/fly_sb2040_v2_klipper_usb_updating.html
+match:
+  chips:
+    - rp2040
+  mcu_name_hints:
+    - sb2040
+    - toolhead
+  transports:
+    - usb
+build:
+  firmware: klipper
+  architecture: rp2040
+  processor: RP2040
+  bootloader_offset: 16KiB
+  communication: usb
+  gpio_pins_on_startup: gpio24
+bootloader:
+  firmware: katapult
+  type: katapult
+  architecture: rp2040
+  processor: RP2040
+  communication: usb
+  support_double_click_reset: true
+  status_led_pin: gpio24
+initial_flash:
+  method: rp2040_bootsel_make_flash
+  bootloader: katapult
+  boot_vid_pid: "2e8a:0003"
+  artifact: "~/katapult/out/katapult.uf2"
+  command: "make KCONFIG_CONFIG=config.sb2040v2 flash FLASH_DEVICE=2e8a:0003"
+update:
+  method: usb_katapult
+  stop_klipper: true
+  flash: "make KCONFIG_CONFIG={{ config }} flash FLASH_DEVICE={{ serial }}"
+  start_klipper: true
+flash:
+  method: pending_usb_profile
+notes:
+  limitation: Backend USB Katapult update flow for standalone USB toolheads is not enabled yet.

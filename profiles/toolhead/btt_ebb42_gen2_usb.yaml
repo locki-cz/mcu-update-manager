@@ -1,0 +1,53 @@
+id: btt_ebb42_gen2_usb
+name: BigTreeTech EBB42 Gen2 USB
+vendor: BigTreeTech
+family: toolhead
+source:
+  - https://usb.esoterical.online/hardware_config/hardware_config.html
+  - https://usb.esoterical.online/updating.html
+match:
+  chips:
+    - stm32g0b1xx
+  mcu_name_hints:
+    - ebb
+    - toolhead
+  transports:
+    - usb
+build:
+  firmware: klipper
+  architecture: stm32
+  processor: STM32G0B1
+  clock_reference: 8MHz crystal
+  bootloader_offset: 8KiB
+  communication: usb
+  gpio_pins_on_startup: ""
+bootloader:
+  firmware: katapult
+  type: katapult
+  architecture: stm32
+  processor: STM32G0B1
+  clock_reference: 8MHz crystal
+  application_start_offset: 8KiB
+  communication: usb
+  support_bootloader_entry: true
+initial_flash:
+  method: dfu_util
+  bootloader: katapult
+  dfu_vid_pid: "0483:df11"
+  artifact: "~/katapult/out/katapult.bin"
+  command: "dfu-util -a 0 -D ~/katapult/out/katapult.bin -s 0x08000000:leave"
+  physical_steps:
+    - Power off printer.
+    - Remove USB/CAN selection jumper.
+    - Connect USB to the breakout board USB-C port.
+    - Hold BOOT, press and release RST, wait 5 seconds, release BOOT.
+update:
+  method: klipper_make_flash_usb
+  stop_klipper: true
+  flash: "make flash FLASH_DEVICE={{ serial }}"
+  start_klipper: true
+flash:
+  method: usb_make_flash
+notes:
+  dfu_vid_pid: "0483:df11"
+  usb_update: Uses existing Klipper USB serial from printer.cfg or /dev/serial/by-id.

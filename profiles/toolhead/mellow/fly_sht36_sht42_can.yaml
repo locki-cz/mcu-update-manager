@@ -1,0 +1,109 @@
+profiles:
+  - id: mellow_fly_sht36_can
+    name: Mellow Fly-SHT36 CAN
+    vendor: Mellow
+    family: toolhead
+    source:
+      - https://mellow-3d.github.io/fly-sht36_canboot_can.html
+      - https://mellow-3d.github.io/fly-sht36_klipper_can.html
+      - https://mellow-3d.github.io/fly-sht36_klipper_can_updating.html
+    match:
+      chips:
+        - stm32f072xx
+      mcu_name_hints:
+        - sht36
+        - toolhead
+      transports:
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F072
+      clock_reference: 8MHz crystal
+      bootloader_offset: 8KiB
+      communication: canbus
+      can_rx_pin: PA8
+      can_tx_pin: PA9
+      can_bitrate: "{{ can_bitrate }}"
+      documented_bitrate: "500000"
+      requires_manual_menuconfig: true
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F072
+      clock_reference: 8MHz crystal
+      application_start_offset: 8KiB
+      communication: canbus
+      can_rx_pin: PA8
+      can_tx_pin: PA9
+      can_bitrate: "{{ can_bitrate }}"
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      command: "make flash FLASH_DEVICE=0483:df11"
+    update:
+      method: can_katapult
+      stop_klipper: true
+      enter_bootloader: "python3 ~/katapult/scripts/flashtool.py -i {{ can_interface }} -r -u {{ canbus_uuid }}"
+      flash: "python3 ~/katapult/scripts/flash_can.py -i {{ can_interface }} -f {{ artifact }} -u {{ canbus_uuid }}"
+      start_klipper: true
+    flash:
+      method: pending_verified_profile
+    notes:
+      limitation: PA8/PA9 CAN Kconfig symbol must be verified against the installed Klipper/Kalico tree before automatic build.
+  - id: mellow_fly_sht42_can
+    name: Mellow Fly-SHT42 CAN
+    vendor: Mellow
+    family: toolhead
+    source:
+      - https://mellow-3d.github.io/fly-sht42_canboot_can.html
+      - https://mellow-3d.github.io/fly-sht42_klipper_can.html
+      - https://mellow-3d.github.io/fly-sht42_klipper_can_updating.html
+    match:
+      chips:
+        - stm32f072xx
+      mcu_name_hints:
+        - sht42
+        - toolhead
+      transports:
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F072
+      clock_reference: 8MHz crystal
+      bootloader_offset: 8KiB
+      communication: canbus
+      can_rx_pin: PA8
+      can_tx_pin: PA9
+      can_bitrate: "{{ can_bitrate }}"
+      documented_bitrate: "500000"
+      requires_manual_menuconfig: true
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F072
+      clock_reference: 8MHz crystal
+      application_start_offset: 8KiB
+      communication: canbus
+      can_rx_pin: PA8
+      can_tx_pin: PA9
+      can_bitrate: "{{ can_bitrate }}"
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      command: "make flash FLASH_DEVICE=0483:df11"
+    update:
+      method: can_katapult
+      stop_klipper: true
+      enter_bootloader: "python3 ~/katapult/scripts/flashtool.py -i {{ can_interface }} -r -u {{ canbus_uuid }}"
+      flash: "python3 ~/katapult/scripts/flash_can.py -i {{ can_interface }} -f {{ artifact }} -u {{ canbus_uuid }}"
+      start_klipper: true
+    flash:
+      method: pending_verified_profile
+    notes:
+      limitation: PA8/PA9 CAN Kconfig symbol must be verified against the installed Klipper/Kalico tree before automatic build.

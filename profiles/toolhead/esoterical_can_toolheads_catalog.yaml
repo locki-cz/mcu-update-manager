@@ -1,0 +1,311 @@
+# Auto-generated from Esoterical hardware lists.
+# Precise build settings must be promoted from requires_esoterical_image_extraction
+# after the Katapult/Klipper menuconfig screenshot is parsed and reviewed.
+profiles:
+  - id: esoterical_can_toolhead_afc_lite_for_boxturtle
+    name: AFC-Lite for Boxturtle
+    vendor: Esoterical
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/AFC-Lite%20for%20Boxturtle/README.html
+    match:
+      mcu_name_hints:
+        - afc
+        - lite
+        - boxturtle
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_toolhead_afc_pro
+    name: AFC-Pro
+    vendor: Esoterical
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/AFC-Pro/README.html
+    match:
+      mcu_name_hints:
+        - afc
+        - pro
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  # BigTreeTech EBB36 Gen2 is provided by exact profile: btt_ebb36_gen2_can
+  # BigTreeTech EBB36 V1.2 is provided by exact profile: btt_ebb36_v12_can
+  # BigTreeTech EBB42 Gen2 is provided by exact profile: btt_ebb42_gen2_can
+  - id: esoterical_can_toolhead_bigtreetech_ebb42_v1_2
+    name: BigTreeTech EBB42 V1.2
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/BigTreeTech%20EBB42%20V1.2/README.html
+    match:
+      mcu_name_hints:
+        - ebb42
+        - v1
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_toolhead_bigtreetech_eddy_duo
+    name: BigTreeTech Eddy Duo
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/BigTreeTech%20Eddy%20Duo/README.html
+    match:
+      mcu_name_hints:
+        - eddy
+        - duo
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_toolhead_bigtreetech_mmb_v10
+    name: BigTreeTech MMB v1.0
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/BigTreeTech%20MMB%20v1.0/README.html
+    match:
+      mcu_name_hints:
+        - mmb
+        - v1
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_toolhead_bigtreetech_mmb_v20
+    name: BigTreeTech MMB v2.0
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/BigTreeTech%20MMB%20v2.0/README.html
+    match:
+      mcu_name_hints:
+        - mmb
+        - v2
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_toolhead_bigtreetech_sb2209_rp2040
+    name: BigTreeTech SB2209 (RP2040)
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/BigTreeTech%20SB2209%20%28RP2040%29/README.html
+    match:
+      mcu_name_hints:
+        - sb2209
+        - rp2040
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_toolhead_bigtreetech_sb2209_and_sb2240
+    name: BigTreeTech SB2209 and SB2240
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/BigTreeTech%20SB2209%20and%20SB2240/README.html
+    match:
+      mcu_name_hints:
+        - sb2209
+        - sb2240
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_toolhead_dragondinghy
+    name: DragonDinghy
+    vendor: Esoterical
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/DragonDinghy/README.html
+    match:
+      mcu_name_hints:
+        - dragondinghy
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  # Fysetc H36 is provided by exact profile: fysetc_h36_combo
+  - id: esoterical_can_toolhead_fysetc_h36_v20
+    name: Fysetc H36 v2.0
+    vendor: FYSETC
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/Fysetc%20H36%20v2.0/README.html
+    match:
+      mcu_name_hints:
+        - h36
+        - v2
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_toolhead_fysetc_pitb_v10
+    name: Fysetc PITB V1.0
+    vendor: FYSETC
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/Fysetc%20PITB%20V1.0/README.html
+    match:
+      mcu_name_hints:
+        - pitb
+        - v1
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_toolhead_fysetc_pitb_v20
+    name: Fysetc PITB V2.0
+    vendor: FYSETC
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/Fysetc%20PITB%20V2.0/README.html
+    match:
+      mcu_name_hints:
+        - pitb
+        - v2
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  # Fysetc SB Combo V2 is provided by exact profile: fysetc_sb_combo_v2
+  # Fysetc SB-CAN-TH is provided by exact profile: fysetc_sb_can_toolhead
+  - id: esoterical_can_toolhead_mellow_fly_ercf
+    name: Mellow Fly ERCF
+    vendor: Mellow
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/Mellow%20Fly%20ERCF/README.html
+    match:
+      mcu_name_hints:
+        - ercf
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_toolhead_mellow_fly_sb2040v1_v2
+    name: Mellow Fly SB2040v1/v2
+    vendor: Mellow
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/Mellow%20Fly%20SB2040v1%2Fv2/README.html
+    match:
+      mcu_name_hints:
+        - sb2040v1
+        - v2
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_toolhead_mellow_fly_sb2040v3
+    name: Mellow Fly SB2040v3
+    vendor: Mellow
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/Mellow%20Fly%20SB2040v3/README.html
+    match:
+      mcu_name_hints:
+        - sb2040v3
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_toolhead_mellow_fly_sht36_and_sht42
+    name: Mellow Fly SHT36 and SHT42
+    vendor: Mellow
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/Mellow%20Fly%20SHT36%20and%20SHT42/README.html
+    match:
+      mcu_name_hints:
+        - sht36
+        - sht42
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_toolhead_mellow_fly_sht36v2
+    name: Mellow Fly SHT36v2
+    vendor: Mellow
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/Mellow%20Fly%20SHT36v2/README.html
+    match:
+      mcu_name_hints:
+        - sht36v2
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_toolhead_mellow_fly_sht36v3
+    name: Mellow Fly SHT36v3
+    vendor: Mellow
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/Mellow%20Fly%20SHT36v3/README.html
+    match:
+      mcu_name_hints:
+        - sht36v3
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_toolhead_mks_thr36_v10
+    name: MKS THR36 V1.0
+    vendor: MKS
+    family: toolhead
+    source:
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/MKS%20THR36%20V1.0/README.html
+    match:
+      mcu_name_hints:
+        - mks
+        - thr36
+        - v1
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile

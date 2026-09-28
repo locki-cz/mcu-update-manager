@@ -1,0 +1,196 @@
+# Auto-generated from Esoterical hardware lists.
+# Precise build settings must be promoted from requires_esoterical_image_extraction
+# after the Katapult/Klipper menuconfig screenshot is parsed and reviewed.
+profiles:
+  - id: esoterical_usb_toolhead_afc_lite_for_boxturtle
+    name: AFC-Lite for Boxturtle USB
+    vendor: Esoterical
+    family: toolhead
+    source:
+      - https://usb.esoterical.online/hardware_config/AFC-Lite%20for%20Boxturtle.html
+    match:
+      mcu_name_hints:
+        - afc
+        - lite
+        - boxturtle
+      transports:
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  # BigTreeTech EBB36 Gen2 is provided by exact profile: btt_ebb36_gen2_usb
+  # BigTreeTech EBB42 Gen2 is provided by exact profile: btt_ebb42_gen2_usb
+  - id: esoterical_usb_toolhead_bigtreetech_eddy
+    name: BigTreeTech Eddy USB
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://usb.esoterical.online/hardware_config/BigTreeTech%20Eddy.html
+    match:
+      mcu_name_hints:
+        - eddy
+      transports:
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_usb_toolhead_bigtreetech_mmb
+    name: BigTreeTech MMB USB
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://usb.esoterical.online/hardware_config/BigTreeTech%20MMB.html
+    match:
+      mcu_name_hints:
+        - mmb
+      transports:
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_usb_toolhead_bigtreetech_sb2209_usb
+    name: BigTreeTech SB2209-USB
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://usb.esoterical.online/hardware_config/BigTreeTech%20SB2209-USB.html
+    match:
+      mcu_name_hints:
+        - sb2209
+      transports:
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_usb_toolhead_dragondinghy
+    name: DragonDinghy USB
+    vendor: Esoterical
+    family: toolhead
+    source:
+      - https://usb.esoterical.online/hardware_config/DragonDinghy.html
+    match:
+      mcu_name_hints:
+        - dragondinghy
+      transports:
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_usb_toolhead_fysetc_h36
+    name: Fysetc H36 USB
+    vendor: FYSETC
+    family: toolhead
+    source:
+      - https://usb.esoterical.online/hardware_config/Fysetc%20H36.html
+    match:
+      mcu_name_hints:
+        - h36
+      transports:
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_usb_toolhead_fysetc_h36_v2
+    name: Fysetc H36 V2 USB
+    vendor: FYSETC
+    family: toolhead
+    source:
+      - https://usb.esoterical.online/hardware_config/Fysetc%20H36%20V2.html
+    match:
+      mcu_name_hints:
+        - h36
+        - v2
+      transports:
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_usb_toolhead_fysetc_pitb_v10
+    name: Fysetc PITB V1.0 USB
+    vendor: FYSETC
+    family: toolhead
+    source:
+      - https://usb.esoterical.online/hardware_config/Fysetc%20PITB%20V1.0.html
+    match:
+      mcu_name_hints:
+        - pitb
+        - v1
+      transports:
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_usb_toolhead_fysetc_pitb_v20
+    name: Fysetc PITB V2.0 USB
+    vendor: FYSETC
+    family: toolhead
+    source:
+      - https://usb.esoterical.online/hardware_config/Fysetc%20PITB%20V2.0.html
+    match:
+      mcu_name_hints:
+        - pitb
+        - v2
+      transports:
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_usb_toolhead_fysetc_sb_combo_v2
+    name: Fysetc SB Combo V2 USB
+    vendor: FYSETC
+    family: toolhead
+    source:
+      - https://usb.esoterical.online/hardware_config/Fysetc%20SB%20Combo%20V2.html
+    match:
+      mcu_name_hints:
+        - sb
+        - combo
+        - v2
+      transports:
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_usb_toolhead_ldo_nitehawk_sb
+    name: LDO Nitehawk SB USB
+    vendor: LDO
+    family: toolhead
+    source:
+      - https://usb.esoterical.online/hardware_config/LDO%20Nitehawk%20SB.html
+    match:
+      mcu_name_hints:
+        - ldo
+        - nitehawk
+        - sb
+      transports:
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_usb_toolhead_ldo_nitehawk36
+    name: LDO Nitehawk36 USB
+    vendor: LDO
+    family: toolhead
+    source:
+      - https://usb.esoterical.online/hardware_config/LDO%20Nitehawk36.html
+    match:
+      mcu_name_hints:
+        - ldo
+        - nitehawk36
+      transports:
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile

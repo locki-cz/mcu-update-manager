@@ -1,0 +1,21 @@
+{
+  "mcu": {
+    "mcu_constants": {
+      "MCU": "stm32h723xx"
+    },
+    "mcu_version": "Kalico v2026.02.00-7-g27902226"
+  },
+  "mcu cartographer": {
+    "app": "Cartographer",
+    "mcu_constants": {
+      "MCU": "stm32g431xx"
+    },
+    "mcu_version": "CARTOGRAPHER V4 6.1.0"
+  },
+  "mcu ebb": {
+    "mcu_constants": {
+      "MCU": "stm32g0b1xx"
+    },
+    "mcu_version": "Kalico v2026.02.00-7-g27902226"
+  }
+}

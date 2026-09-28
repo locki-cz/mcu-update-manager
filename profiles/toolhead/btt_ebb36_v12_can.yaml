@@ -1,0 +1,58 @@
+id: btt_ebb36_v12_can
+name: BigTreeTech EBB36 V1.2
+vendor: BigTreeTech
+family: toolhead
+source:
+  - https://canbus.esoterical.online/toolhead_flashing/common_hardware/BigTreeTech%20EBB36%20V1.2/README.html
+match:
+  chips:
+    - stm32g0b1xx
+  mcu_name_hints:
+    - ebb
+    - toolhead
+  transports:
+    - can
+fingerprint:
+  printer_cfg_pins:
+    strong:
+      - PD0
+      - PD1
+      - PD2
+      - PB13
+build:
+  firmware: klipper
+  architecture: stm32
+  processor: STM32G0B1
+  clock_reference: 8MHz crystal
+  bootloader_offset: 8KiB
+  communication: canbus
+  can_rx_pin: PB0
+  can_tx_pin: PB1
+  can_bitrate: "{{ can_bitrate }}"
+bootloader:
+  firmware: katapult
+  type: katapult
+  architecture: stm32
+  processor: STM32G0B1
+  clock_reference: 8MHz crystal
+  application_start_offset: 8KiB
+  communication: canbus
+  can_rx_pin: PB0
+  can_tx_pin: PB1
+  can_bitrate: "{{ can_bitrate }}"
+initial_flash:
+  method: dfu_util
+  bootloader: katapult
+  dfu_vid_pid: "0483:df11"
+  artifact: "~/katapult/out/katapult.bin"
+  command: "dfu-util -a 0 -D ~/katapult/out/katapult.bin -s 0x08000000:leave"
+update:
+  method: can_katapult
+  stop_klipper: true
+  enter_bootloader: "python3 ~/katapult/scripts/flashtool.py -i {{ can_interface }} -r -u {{ canbus_uuid }}"
+  flash: "python3 ~/katapult/scripts/flashtool.py -i {{ can_interface }} -f {{ artifact }} -u {{ canbus_uuid }}"
+  start_klipper: true
+flash:
+  method: can_katapult
+notes:
+  dfu_vid_pid: "0483:df11"

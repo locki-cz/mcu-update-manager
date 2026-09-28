@@ -1,0 +1,55 @@
+id: mellow_fly_sb2040_v2_can
+name: Mellow Fly-SB2040 V2 CAN
+vendor: Mellow
+family: toolhead
+source:
+  - https://mellow-3d.github.io/fly_sb2040_v2_canboot_can.html
+  - https://mellow-3d.github.io/fly_sb2040_v2_klipper_can.html
+  - https://mellow-3d.github.io/fly_sb2040_v2_klipper_can_updating.html
+match:
+  chips:
+    - rp2040
+  mcu_name_hints:
+    - sb2040
+    - toolhead
+  transports:
+    - can
+build:
+  firmware: klipper
+  architecture: rp2040
+  processor: RP2040
+  bootloader_offset: 16KiB
+  communication: canbus
+  can_rx_gpio: gpio4
+  can_tx_gpio: gpio5
+  can_bitrate: "{{ can_bitrate }}"
+  gpio_pins_on_startup: gpio24
+  documented_bitrate: "1000000"
+bootloader:
+  firmware: katapult
+  type: katapult
+  architecture: rp2040
+  processor: RP2040
+  communication: canbus
+  can_rx_gpio: gpio4
+  can_tx_gpio: gpio5
+  can_bitrate: "{{ can_bitrate }}"
+  support_double_click_reset: true
+  status_led_pin: gpio24
+initial_flash:
+  method: rp2040_bootsel_make_flash
+  bootloader: katapult
+  boot_vid_pid: "2e8a:0003"
+  artifact: "~/katapult/out/katapult.uf2"
+  command: "make KCONFIG_CONFIG=config.sb2040v2 flash FLASH_DEVICE=2e8a:0003"
+update:
+  method: can_katapult
+  stop_klipper: true
+  enter_bootloader: "python3 ~/katapult/scripts/flashtool.py -i {{ can_interface }} -r -u {{ canbus_uuid }}"
+  flash: "python3 ~/katapult/scripts/flash_can.py -i {{ can_interface }} -f {{ artifact }} -u {{ canbus_uuid }}"
+  start_klipper: true
+flash:
+  method: can_katapult
+notes:
+  startup_pin: Mellow Klipper guide sets GPIO pins to set at micro-controller startup to gpio24.
+  can_mode: Katapult CAN and Klipper CAN both use RX gpio4, TX gpio5, bitrate 1000000 in Mellow docs.

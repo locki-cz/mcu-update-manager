@@ -1,0 +1,60 @@
+id: fysetc_erb_v20_usb
+name: FYSETC ERB V2.0 USB
+vendor: FYSETC
+family: mmu
+source:
+  - https://github.com/FYSETC/FYSETC-ERB/tree/main/V2.0
+  - https://raw.githubusercontent.com/FYSETC/FYSETC-ERB/main/V2.0/config/mmu.cfg
+match:
+  chips:
+    - rp2040
+  mcu_name_hints:
+    - ercf
+    - erb
+    - mmu
+  transports:
+    - usb
+fingerprint:
+  printer_cfg_pins:
+    strong:
+      - gpio10
+      - gpio9
+      - gpio8
+      - gpio16
+      - gpio15
+      - gpio14
+      - gpio23
+      - gpio22
+build:
+  firmware: klipper
+  architecture: rp2040
+  processor: RP2040
+  communication: usb
+  gpio_pins_on_startup: ""
+bootloader:
+  firmware: katapult
+  type: katapult
+  architecture: rp2040
+  processor: RP2040
+  communication: usb
+  recommended: true
+initial_flash:
+  method: rp2040_bootsel_make_flash
+  boot_vid_pid: "2e8a:0003"
+  command: "make flash FLASH_DEVICE=2e8a:0003"
+  physical_steps:
+    - Connect 24V power.
+    - Connect USB-C to the host.
+    - Hold BOOTSEL.
+    - Press and hold RST for 0.5 seconds.
+    - Release RST, wait 3 seconds, release BOOTSEL.
+update:
+  method: klipper_make_flash_usb
+  stop_klipper: true
+  flash: "make flash FLASH_DEVICE={{ serial }}"
+  start_klipper: true
+flash:
+  method: rp2040_bootsel_or_usb_make_flash
+notes:
+  config_sample: V2.0/config/mmu.cfg
+  katapult: FYSETC recommends Katapult for both USB and CANBUS communication.

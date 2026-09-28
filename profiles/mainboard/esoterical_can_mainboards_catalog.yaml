@@ -1,0 +1,351 @@
+# Auto-generated from Esoterical hardware lists.
+# Precise build settings must be promoted from requires_esoterical_image_extraction
+# after the Katapult/Klipper menuconfig screenshot is parsed and reviewed.
+profiles:
+  - id: esoterical_can_mainboard_bigtreetech_kraken
+    name: BigTreeTech Kraken
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/BigTreeTech%20Kraken/README.html
+    match:
+      mcu_name_hints:
+        - kraken
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_bigtreetech_manta_e3ez
+    name: BigTreeTech Manta E3EZ
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/BigTreeTech%20Manta%20E3EZ/README.html
+    match:
+      mcu_name_hints:
+        - manta
+        - e3ez
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_bigtreetech_manta_m5p_v10
+    name: BigTreeTech Manta M5P V1.0
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/BigTreeTech%20Manta%20M5P%20V1.0/README.html
+    match:
+      mcu_name_hints:
+        - manta
+        - m5p
+        - v1
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_bigtreetech_manta_m8p_v1_1
+    name: BigTreeTech Manta M8P V1.1
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/BigTreeTech%20Manta%20M8P%20V1.1/README.html
+    match:
+      mcu_name_hints:
+        - manta
+        - m8p
+        - v1
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_bigtreetech_manta_m8p_v20
+    name: BigTreeTech Manta M8P V2.0
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/BigTreeTech%20Manta%20M8P%20V2.0/README.html
+    match:
+      mcu_name_hints:
+        - manta
+        - m8p
+        - v2
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_bigtreetech_octopus
+    name: BigTreeTech Octopus
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/BigTreeTech%20Octopus/README.html
+    match:
+      mcu_name_hints:
+        - octopus
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_bigtreetech_octopus_max_ez
+    name: BigTreeTech Octopus Max EZ
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/BigTreeTech%20Octopus%20Max%20EZ/README.html
+    match:
+      mcu_name_hints:
+        - octopus
+        - max
+        - ez
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_bigtreetech_octopus_pro_v1_1
+    name: BigTreeTech Octopus Pro v1.1
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/BigTreeTech%20Octopus%20Pro%20v1.1/README.html
+    match:
+      mcu_name_hints:
+        - octopus
+        - pro
+        - v1
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_bigtreetech_octopus_x7_troodon
+    name: BigTreeTech Octopus X7 (Troodon)
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/BigTreeTech%20Octopus%20X7%20%28Troodon%29/README.html
+    match:
+      mcu_name_hints:
+        - octopus
+        - x7
+        - troodon
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_bigtreetech_skr_pico
+    name: BigTreeTech SKR Pico
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/BigTreeTech%20SKR%20Pico/README.html
+    match:
+      mcu_name_hints:
+        - skr
+        - pico
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_bigtreetech_skr_3
+    name: BigTreeTech SKR-3
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/BigTreeTech%20SKR-3/README.html
+    match:
+      mcu_name_hints:
+        - skr
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_bigtreetech_skr_3_ez
+    name: BigTreeTech SKR-3 EZ
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/BigTreeTech%20SKR-3%20EZ/README.html
+    match:
+      mcu_name_hints:
+        - skr
+        - ez
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_bigtreetech_skrat_v10
+    name: BigTreeTech SKRat v1.0
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/BigTreeTech%20SKRat%20v1.0/README.html
+    match:
+      mcu_name_hints:
+        - skrat
+        - v1
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  # Fysetc Hexa Distro Fusion is provided by exact profile: fysetc_hexa_distro_fusion
+  # Fysetc Spider King is provided by exact profile: fysetc_spider_king
+  - id: esoterical_can_mainboard_fysetc_spider_pro
+    name: Fysetc Spider Pro
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/Fysetc%20Spider%20Pro/README.html
+    match:
+      mcu_name_hints:
+        - spider
+        - pro
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  # Fysetc Spider V1.0 is provided by exact profile: fysetc_spider
+  # Fysetc Spider v2.2 is provided by exact profile: fysetc_spider
+  # Fysetc Spider v2.3 is provided by exact profile: fysetc_spider
+  # Fysetc Spider v3.0 is provided by exact profile: fysetc_spider
+  # Fysetc Spider v3.0 H7 is provided by exact profile: fysetc_spider_v3_h7
+  - id: esoterical_can_mainboard_ldo_leviathan_v1_2
+    name: LDO Leviathan v1.2
+    vendor: LDO
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/LDO%20Leviathan%20v1.2/README.html
+    match:
+      mcu_name_hints:
+        - ldo
+        - leviathan
+        - v1
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_ldo_leviathan_v1_3
+    name: LDO Leviathan v1.3
+    vendor: LDO
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/LDO%20Leviathan%20v1.3/README.html
+    match:
+      mcu_name_hints:
+        - ldo
+        - leviathan
+        - v1
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_mellow_fly_d5p
+    name: Mellow FLY-D5P
+    vendor: Mellow
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/Mellow%20FLY-D5P/README.html
+    match:
+      mcu_name_hints:
+        - d5p
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_mellow_fly_micro4
+    name: Mellow FLY-Micro4
+    vendor: Mellow
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/Mellow%20FLY-Micro4/README.html
+    match:
+      mcu_name_hints:
+        - micro4
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_mellow_fly_super8
+    name: Mellow Fly-Super8
+    vendor: Mellow
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/Mellow%20Fly-Super8/README.html
+    match:
+      mcu_name_hints:
+        - super8
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_mellow_fly_super8_pro_h723
+    name: Mellow Fly-Super8 Pro H723
+    vendor: Mellow
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/Mellow%20Fly-Super8%20Pro%20H723/README.html
+    match:
+      mcu_name_hints:
+        - super8
+        - pro
+        - h723
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: esoterical_can_mainboard_mks_monster8_v2
+    name: MKS Monster8 v2
+    vendor: MKS
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/MKS%20Monster8%20v2/README.html
+    match:
+      mcu_name_hints:
+        - mks
+        - monster8
+        - v2
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile

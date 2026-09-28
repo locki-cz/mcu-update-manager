@@ -1,0 +1,52 @@
+id: isik_ouroboros_usb
+name: Isik's Tech Ouroboros USB
+vendor: Isik's Tech
+family: expansion
+source:
+  - https://docs.isiks.tech/Ouroboros/Firmware-Setup/
+match:
+  chips:
+    - stm32h723xx
+  mcu_name_hints:
+    - ouroboros
+  transports:
+    - usb
+fingerprint:
+  printer_cfg_pins:
+    strong:
+      - PD4
+      - PD3
+      - PD6
+      - PC12
+      - PC11
+      - PD1
+build:
+  firmware: klipper
+  architecture: stm32
+  processor: STM32H723
+  clock_reference: 25MHz crystal
+  bootloader_offset: No bootloader
+  communication: usb
+  usb_pins: PA11/PA12
+  mcu_name: ouroboros
+  gpio_pins_on_startup: ""
+initial_flash:
+  method: klipper_make_flash_dfu
+  dfu_vid_pid: "0483:df11"
+  artifact: "~/klipper/out/klipper.bin"
+  command: "make flash FLASH_DEVICE=0483:df11"
+  physical_steps:
+    - Hold BOOT.
+    - Press and release RESET while holding BOOT.
+    - Release BOOT.
+update:
+  method: klipper_make_flash_usb
+  stop_klipper: true
+  flash: "make flash FLASH_DEVICE={{ serial }}"
+  verify_serial: true
+  start_klipper: true
+flash:
+  method: klipper_make_flash_usb
+notes:
+  plugin_dependency: tmc-4671 Klipper plugin is required by the Ouroboros setup guide.
+  setup: Official installation flashes Klipper/Kalico directly through STM32 DFU without a bootloader. Use STM32H723, no bootloader, 25 MHz crystal, and USB on PA11/PA12. Later updates use make flash with the existing usb-Klipper serial ID.

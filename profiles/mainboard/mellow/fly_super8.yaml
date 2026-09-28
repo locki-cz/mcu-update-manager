@@ -1,0 +1,100 @@
+profiles:
+  - id: mellow_fly_super8_can
+    name: Mellow Fly-Super8 CAN
+    vendor: Mellow
+    family: mainboard
+    source:
+      - https://mellow-3d.github.io/fly_super8_canboot_can.html
+      - https://mellow-3d.github.io/fly_super8_klipper_can.html
+    match:
+      chips:
+        - stm32f407xx
+      mcu_name_hints:
+        - super8
+      transports:
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F407
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: canbus
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+      documented_bitrate: "500000"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F407
+      clock_reference: 8MHz crystal
+      application_start_offset: 32KiB
+      communication: canbus
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+    initial_flash:
+      method: sdcard
+      bootloader: katapult
+      artifact: "~/katapult/out/katapult.bin"
+      output_name: firmware.bin
+    update:
+      method: can_katapult
+      stop_klipper: true
+      enter_bootloader: "python3 ~/katapult/scripts/flashtool.py -i {{ can_interface }} -r -u {{ canbus_uuid }}"
+      flash: "python3 ~/katapult/scripts/flash_can.py -i {{ can_interface }} -f {{ artifact }} -u {{ canbus_uuid }}"
+      start_klipper: true
+    flash:
+      method: can_katapult
+  - id: mellow_fly_super8_usb_can_bridge
+    name: Mellow Fly-Super8 USB-CAN bridge
+    vendor: Mellow
+    family: mainboard
+    source:
+      - https://mellow-3d.github.io/fly_super8_canboot_usb.html
+      - https://mellow-3d.github.io/fly_super8_klipper_usbtocan.html
+    match:
+      chips:
+        - stm32f407xx
+      mcu_name_hints:
+        - super8
+      transports:
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F407
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+      documented_bitrate: "500000"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F407
+      clock_reference: 8MHz crystal
+      application_start_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+    initial_flash:
+      method: sdcard
+      bootloader: katapult
+      artifact: "~/katapult/out/katapult.bin"
+      output_name: firmware.bin
+    update:
+      method: can_bridge_usb_katapult
+      stop_klipper: true
+      enter_bootloader: "python3 ~/katapult/scripts/flashtool.py -i {{ can_interface }} -r -u {{ canbus_uuid }}"
+      wait_usb_katapult: true
+      flash_usb: "python3 ~/katapult/scripts/flashtool.py -f {{ artifact }} -d {{ katapult_serial }}"
+      verify_can_uuid: true
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash

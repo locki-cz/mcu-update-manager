@@ -1,0 +1,45 @@
+id: fysetc_erb_v20_can
+name: FYSETC ERB V2.0 CAN
+vendor: FYSETC
+family: mmu
+source:
+  - https://github.com/FYSETC/FYSETC-ERB/tree/main/V2.0
+match:
+  chips:
+    - rp2040
+  mcu_name_hints:
+    - ercf
+    - erb
+    - mmu
+  transports:
+    - can
+build:
+  firmware: klipper
+  architecture: rp2040
+  processor: RP2040
+  communication: canbus
+  can_bitrate: "{{ can_bitrate }}"
+  requires_manual_menuconfig: true
+bootloader:
+  firmware: katapult
+  type: katapult
+  architecture: rp2040
+  processor: RP2040
+  communication: canbus
+  can_bitrate: "{{ can_bitrate }}"
+  recommended: true
+initial_flash:
+  method: rp2040_bootsel_make_flash
+  boot_vid_pid: "2e8a:0003"
+  command: "make flash FLASH_DEVICE=2e8a:0003"
+update:
+  method: can_katapult
+  stop_klipper: true
+  enter_bootloader: "python3 ~/katapult/scripts/flashtool.py -i {{ can_interface }} -r -u {{ canbus_uuid }}"
+  flash: "python3 ~/katapult/scripts/flashtool.py -i {{ can_interface }} -f {{ artifact }} -u {{ canbus_uuid }}"
+  start_klipper: true
+flash:
+  method: can_katapult
+notes:
+  caution: FYSETC README shows CAN menuconfig in images; exact RP2040 CAN pins must be verified before automatic generation.
+  katapult: FYSETC recommends Katapult for both USB and CANBUS communication.

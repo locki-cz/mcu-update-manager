@@ -1,0 +1,210 @@
+profiles:
+  - id: btt_skr_mini_e3
+    name: BigTreeTech SKR MINI E3
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://global.bttwiki.com/SKR%20MINI%20E3.html
+    match:
+      mcu_name_hints:
+        - skr
+        - mini
+        - e3
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_skr_3_ez
+    name: BigTreeTech SKR 3 EZ
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://global.bttwiki.com/SKR%203%20EZ.html
+    match:
+      mcu_name_hints:
+        - skr
+        - 3
+        - ez
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_skr_3
+    name: BigTreeTech SKR 3
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://global.bttwiki.com/SKR%203.html
+    match:
+      mcu_name_hints:
+        - skr
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_skr_pico
+    name: BigTreeTech SKR Pico
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://global.bttwiki.com/SKR%20Pico.html
+    match:
+      chips:
+        - rp2040
+      mcu_name_hints:
+        - pico
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_skr_pro_v12
+    name: BigTreeTech SKR PRO V1.2
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://global.bttwiki.com/SKR%20PRO%20V1.2.html
+    match:
+      mcu_name_hints:
+        - skr
+        - pro
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_skr_v14
+    name: BigTreeTech SKR V1.4
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://global.bttwiki.com/SKR%20V1.4.html
+    match:
+      mcu_name_hints:
+        - skr
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_skrat
+    name: BigTreeTech SKRat
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://global.bttwiki.com/SKRat.html
+    match:
+      mcu_name_hints:
+        - skrat
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_octopus
+    name: BigTreeTech Octopus
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://global.bttwiki.com/Octopus.html
+    match:
+      mcu_name_hints:
+        - octopus
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_octopus_pro
+    name: BigTreeTech Octopus Pro
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://global.bttwiki.com/Octopus%20Pro.html
+    match:
+      mcu_name_hints:
+        - octopus
+        - pro
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_octopus_max_ez
+    name: BigTreeTech Octopus MAX EZ
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://global.bttwiki.com/Octopus%20MAX%20EZ.html
+    match:
+      mcu_name_hints:
+        - octopus
+        - max
+        - ez
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_manta_m4p
+    name: BigTreeTech Manta M4P
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://global.bttwiki.com/M4P.html
+    match:
+      mcu_name_hints:
+        - manta
+        - m4p
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_manta_m5p
+    name: BigTreeTech Manta M5P
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://global.bttwiki.com/M5P.html
+    match:
+      mcu_name_hints:
+        - manta
+        - m5p
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_manta_m8p
+    name: BigTreeTech Manta M8P
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://global.bttwiki.com/M8P.html
+    match:
+      mcu_name_hints:
+        - manta
+        - m8p
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_manta_m8p_v20
+    name: BigTreeTech Manta M8P V2.0
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://global.bttwiki.com/M8P-V2_0.html
+    match:
+      mcu_name_hints:
+        - manta
+        - m8p
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_kraken
+    name: BigTreeTech KRAKEN V1.0/V1.1
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://global.bttwiki.com/Kraken.html
+    match:
+      mcu_name_hints:
+        - kraken
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile

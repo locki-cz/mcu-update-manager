@@ -1,0 +1,32 @@
+id: cartographer_usb
+name: Cartographer USB
+vendor: Cartographer
+family: probe
+source:
+  - https://github.com/Cartographer3D/cartographer_firmware
+  - https://docs.cartographer3d.com/cartographer-probe/installation-and-setup/v4-switching-from-usb-to-can
+match:
+  chips:
+    - stm32g431xx
+    - stm32g474xx
+  mcu_name_hints:
+    - cartographer
+    - scanner
+  transports:
+    - usb
+build:
+  managed_by: cartographer_firmware
+initial_flash:
+  method: cartographer_vendor_script
+  repository: https://github.com/Cartographer3D/cartographer_firmware.git
+  script: "~/cartographer_firmware/v4_switch.sh"
+  usb_to_can: true
+update:
+  method: cartographer_prebuilt_bin
+  catalog: "~/cartographer_firmware/firmware_list.csv"
+  firmware_root: "~/cartographer_firmware/firmware"
+flash:
+  method: cartographer_prebuilt_bin
+  transport: usb_katapult
+notes:
+  mode: Vendor-managed Cartographer USB firmware; USB-to-CAN conversion uses v4_switch.sh.

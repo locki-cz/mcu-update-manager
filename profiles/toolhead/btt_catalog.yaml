@@ -1,0 +1,195 @@
+profiles:
+  - id: btt_vivid
+    name: BigTreeTech ViViD
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://global.bttwiki.com/BIGTREETECH_ViViD.html
+    match:
+      mcu_name_hints:
+        - vivid
+      transports:
+        - can
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_ebb36_can_catalog
+    name: BigTreeTech EBB 36 CAN
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://global.bttwiki.com/EBB%2036%20CAN.html
+    match:
+      mcu_name_hints:
+        - ebb
+        - 36
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_ebb42_can_catalog
+    name: BigTreeTech EBB 42 CAN
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://global.bttwiki.com/EBB%2042%20CAN.html
+    match:
+      mcu_name_hints:
+        - ebb
+        - 42
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_ebb2240_2209_can
+    name: BigTreeTech EBB 2240/2209 CAN
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://global.bttwiki.com/EBB%202240%202209%20CAN.html
+    match:
+      mcu_name_hints:
+        - ebb
+        - 2240
+        - 2209
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_ebb_sb2209_can_rp2040
+    name: BigTreeTech EBB SB2209 CAN RP2040
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://global.bttwiki.com/EBB%202209%20CAN%20RP2040.html
+    match:
+      chips:
+        - rp2040
+      mcu_name_hints:
+        - sb2209
+        - ebb
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_ebb_sb2209_usb_v10
+    name: BigTreeTech EBB SB2209 USB V1.0
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://global.bttwiki.com/EBB%20SB2209%20USB.html
+    match:
+      mcu_name_hints:
+        - sb2209
+        - ebb
+      transports:
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_ebb36_gen2_catalog
+    name: BigTreeTech EBB36 GEN2 V1.0
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://global.bttwiki.com/EBB36_GEN2.html
+    match:
+      mcu_name_hints:
+        - ebb
+        - 36
+        - gen2
+      transports:
+        - can
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_ebb42_gen2_catalog
+    name: BigTreeTech EBB42 GEN2 V1.0
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://global.bttwiki.com/EBB42_GEN2.html
+    match:
+      mcu_name_hints:
+        - ebb
+        - 42
+        - gen2
+      transports:
+        - can
+        - usb
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_u2c
+    name: BigTreeTech U2C
+    vendor: BigTreeTech
+    family: adapter
+    source:
+      - https://global.bttwiki.com/U2C.html
+    match:
+      mcu_name_hints:
+        - u2c
+      transports:
+        - usb
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_mmb_can_v10
+    name: BigTreeTech MMB CAN V1.0
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://global.bttwiki.com/MMB%20CAN%20V1.0.html
+    match:
+      mcu_name_hints:
+        - mmb
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_mmb_can_v20
+    name: BigTreeTech MMB CAN V2.0
+    vendor: BigTreeTech
+    family: toolhead
+    source:
+      - https://global.bttwiki.com/MMB%20CAN%20V2.0.html
+    match:
+      mcu_name_hints:
+        - mmb
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: btt_rodent
+    name: BigTreeTech Rodent
+    vendor: BigTreeTech
+    family: adapter
+    source:
+      - https://global.bttwiki.com/Rodent.html
+    match:
+      mcu_name_hints:
+        - rodent
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile

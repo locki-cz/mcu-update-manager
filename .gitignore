@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.log
+builds/
+artifacts/
+cache/
+devices.yaml
+discovery.json
+esoterical-images/
+esoterical-contact-sheets/
+web/
+*.tar.gz
+*.zip
+.DS_Store

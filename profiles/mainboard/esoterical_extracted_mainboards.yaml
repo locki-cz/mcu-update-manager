@@ -1,0 +1,1438 @@
+# Auto-generated from reviewed Esoterical menuconfig screenshots.
+# Regenerate with tools/generate_profiles_from_extracted.py after editing esoterical-extracted-config.json.
+profiles:
+  - id: esoterical_bigtreetech_kraken_usb_can_bridge
+    name: BigTreeTech Kraken USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/001.png
+      - esoterical-images/002.png
+    match:
+      chips:
+        - stm32h723xx
+      mcu_name_hints:
+        - kraken
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 128KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PA14
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_manta_e3ez_usb_can_bridge
+    name: BigTreeTech Manta E3EZ USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/003.png
+      - esoterical-images/004.png
+    match:
+      chips:
+        - stm32g0b1xx
+      mcu_name_hints:
+        - manta
+        - e3ez
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32G0B1
+      clock_reference: 8MHz crystal
+      bootloader_offset: 8KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PB12
+      can_tx_pin: PB13
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32G0B1
+      clock_reference: 8MHz crystal
+      bootloader_offset: 8KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 8KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PC7
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_manta_m5p_v10_usb_can_bridge
+    name: BigTreeTech Manta M5P V1.0 USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/005.png
+      - esoterical-images/006.png
+    match:
+      chips:
+        - stm32g0b1xx
+      mcu_name_hints:
+        - manta
+        - m5p
+        - v1
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32G0B1
+      clock_reference: 8MHz crystal
+      bootloader_offset: 8KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32G0B1
+      clock_reference: 8MHz crystal
+      bootloader_offset: 8KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 8KiB
+      support_double_click_reset: true
+      status_led: false
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_manta_m8p_v1_1_usb_can_bridge
+    name: BigTreeTech Manta M8P V1.1 USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/007.png
+      - esoterical-images/008.png
+    match:
+      chips:
+        - stm32g0b1xx
+      mcu_name_hints:
+        - manta
+        - m8p
+        - v1
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32G0B1
+      clock_reference: 8MHz crystal
+      bootloader_offset: 8KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD12
+      can_tx_pin: PD13
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32G0B1
+      clock_reference: 8MHz crystal
+      bootloader_offset: 8KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 8KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PA13
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_manta_m8p_v20_usb_can_bridge
+    name: BigTreeTech Manta M8P V2.0 USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/009.png
+      - esoterical-images/010.png
+    match:
+      chips:
+        - stm32h723xx
+      mcu_name_hints:
+        - manta
+        - m8p
+        - v2
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 128KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PC3
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_octopus_stm32f446_usb_can_bridge
+    name: BigTreeTech Octopus STM32F446 USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/011.png
+      - esoterical-images/015.png
+    match:
+      chips:
+        - stm32f446xx
+      mcu_name_hints:
+        - octopus
+        - stm32f446
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F446
+      clock_reference: 12MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F446
+      clock_reference: 12MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 32KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PA13
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_octopus_stm32f429_usb_can_bridge
+    name: BigTreeTech Octopus STM32F429 USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/012.png
+      - esoterical-images/016.png
+    match:
+      chips:
+        - stm32f429xx
+      mcu_name_hints:
+        - octopus
+        - stm32f429
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F429
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F429
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 32KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PA13
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_octopus_stm32f407_usb_can_bridge
+    name: BigTreeTech Octopus STM32F407 USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/013.png
+      - esoterical-images/017.png
+    match:
+      chips:
+        - stm32f407xx
+      mcu_name_hints:
+        - octopus
+        - stm32f407
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F407
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F407
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 32KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PA13
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_octopus_stm32h723_usb_can_bridge
+    name: BigTreeTech Octopus STM32H723 USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/014.png
+      - esoterical-images/018.png
+    match:
+      chips:
+        - stm32h723xx
+      mcu_name_hints:
+        - octopus
+        - stm32h723
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 128KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PA13
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_octopus_max_ez_usb_can_bridge
+    name: BigTreeTech Octopus Max EZ USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/019.png
+      - esoterical-images/020.png
+    match:
+      chips:
+        - stm32h723xx
+      mcu_name_hints:
+        - octopus
+        - max
+        - ez
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 128KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PA14
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_octopus_pro_v1_1_usb_can_bridge
+    name: BigTreeTech Octopus Pro v1.1 USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/021.png
+      - esoterical-images/022.png
+    match:
+      chips:
+        - stm32h723xx
+      mcu_name_hints:
+        - octopus
+        - pro
+        - v1
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 128KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PA13
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_octopus_x7_usb_can_bridge
+    name: BigTreeTech Octopus X7 USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/023.png
+      - esoterical-images/024.png
+    match:
+      chips:
+        - stm32f407xx
+      mcu_name_hints:
+        - octopus
+        - x7
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F407
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F407
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 32KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PA13
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_skr_pico_usb_can_bridge
+    name: BigTreeTech SKR Pico USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/025.png
+      - esoterical-images/026.png
+    match:
+      chips:
+        - rp2040
+      mcu_name_hints:
+        - skr
+        - pico
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: rp2040
+      processor: RP2040
+      bootloader_offset: 16KiB
+      communication: usb_to_canbus_bridge
+      can_rx_gpio: gpio1
+      can_tx_gpio: gpio0
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: rp2040
+      processor: RP2040
+      flash_chip: W25Q080 with CLKDIV 2
+      communication: usb
+      support_double_click_reset: true
+      status_led: false
+    initial_flash:
+      method: rp2040_bootsel_make_flash
+      bootloader: katapult
+      boot_vid_pid: "2e8a:0003"
+      physical_steps:
+        - Hold BOOTSEL.
+        - Connect USB while holding BOOTSEL.
+        - Release BOOTSEL after the RP2040 boot device appears.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_skr_3_usb_can_bridge
+    name: BigTreeTech SKR-3 USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/027.png
+      - esoterical-images/028.png
+    match:
+      chips:
+        - stm32h723xx
+      mcu_name_hints:
+        - skr
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 128KiB
+      support_double_click_reset: true
+      status_led: false
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_skr_3_ez_stm32h723_usb_can_bridge
+    name: BigTreeTech SKR-3 EZ STM32H723 USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/029.png
+      - esoterical-images/031.png
+    match:
+      chips:
+        - stm32h723xx
+      mcu_name_hints:
+        - skr
+        - ez
+        - stm32h723
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 128KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PA13
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_skr_3_ez_stm32h743_usb_can_bridge
+    name: BigTreeTech SKR-3 EZ STM32H743 USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/030.png
+      - esoterical-images/032.png
+    match:
+      chips:
+        - stm32h743xx
+      mcu_name_hints:
+        - skr
+        - ez
+        - stm32h743
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32H743
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32H743
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 128KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PA13
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_bigtreetech_skrat_v10_usb_can_bridge
+    name: BigTreeTech SKRat v1.0 USB-CAN bridge
+    vendor: BigTreeTech
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/033.png
+      - esoterical-images/034.png
+    match:
+      chips:
+        - stm32g0b1xx
+      mcu_name_hints:
+        - skrat
+        - v1
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32G0B1
+      clock_reference: 8MHz crystal
+      bootloader_offset: 8KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+      gpio_pins_on_startup: PA4
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32G0B1
+      clock_reference: 8MHz crystal
+      bootloader_offset: 8KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 8KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PE2
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_fysetc_hexa_distro_fusion_usb_can_bridge
+    name: Fysetc Hexa Distro Fusion USB-CAN bridge
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/035.png
+      - esoterical-images/036.png
+    match:
+      chips:
+        - stm32f072xx
+      mcu_name_hints:
+        - hexa
+        - distro
+        - fusion
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F072
+      clock_reference: 12MHz crystal
+      bootloader_offset: 8KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F072
+      clock_reference: 12MHz crystal
+      bootloader_offset: 8KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 8KiB
+      support_double_click_reset: true
+      status_led: false
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_fysetc_spider_king_usb_can_bridge
+    name: Fysetc Spider King USB-CAN bridge
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/037.png
+      - esoterical-images/038.png
+    match:
+      chips:
+        - stm32f407xx
+      mcu_name_hints:
+        - spider
+        - king
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F407
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F407
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 32KiB
+      support_double_click_reset: true
+      status_led: false
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_fysetc_spider_pro_usb_can_bridge
+    name: Fysetc Spider Pro USB-CAN bridge
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/039.png
+      - esoterical-images/040.png
+    match:
+      chips:
+        - stm32h723xx
+      mcu_name_hints:
+        - spider
+        - pro
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32H723
+      clock_reference: 25MHz crystal
+      bootloader_offset: 128KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 128KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PA1
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_fysetc_spider_v10_usb_can_bridge
+    name: Fysetc Spider v1.0 USB-CAN bridge
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/041.png
+      - esoterical-images/042.png
+    match:
+      chips:
+        - stm32f446xx
+      mcu_name_hints:
+        - spider
+        - v1
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F446
+      clock_reference: 12MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F446
+      clock_reference: 12MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 32KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PD3
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_fysetc_spider_v2_2_usb_can_bridge
+    name: Fysetc Spider v2.2 USB-CAN bridge
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/043.png
+      - esoterical-images/044.png
+    match:
+      chips:
+        - stm32f446xx
+      mcu_name_hints:
+        - spider
+        - v2
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F446
+      clock_reference: 12MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F446
+      clock_reference: 12MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 32KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PD3
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_fysetc_spider_v2_3_usb_can_bridge
+    name: Fysetc Spider v2.3 USB-CAN bridge
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/045.png
+      - esoterical-images/046.png
+    match:
+      chips:
+        - stm32f446xx
+      mcu_name_hints:
+        - spider
+        - v2
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F446
+      clock_reference: 12MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F446
+      clock_reference: 12MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 32KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PD3
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash
+  - id: esoterical_fysetc_spider_v30_usb_can_bridge
+    name: Fysetc Spider v3.0 USB-CAN bridge
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware.html
+    source_images:
+      - esoterical-images/047.png
+      - esoterical-images/048.png
+    match:
+      chips:
+        - stm32f446xx
+      mcu_name_hints:
+        - spider
+        - v3
+      transports:
+        - usb
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F446
+      clock_reference: 12MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb_to_canbus_bridge
+      usb_pins: PA11/PA12
+      can_rx_pin: PD0
+      can_tx_pin: PD1
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F446
+      clock_reference: 12MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      application_start_offset: 32KiB
+      support_double_click_reset: true
+      status_led: true
+      status_led_pin: PD3
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      artifact: "~/katapult/out/katapult.bin"
+      command: "dfu-util -R -a 0 -s 0x08000000:mass-erase:force:leave -D ~/katapult/out/katapult.bin -d 0483:df11"
+      physical_steps:
+        - Put the board into STM32 DFU mode.
+        - Connect USB to the board.
+        - Verify that 0483:df11 is visible before flashing.
+    update:
+      method: usb_katapult_or_make_flash
+      stop_klipper: true
+      enter_bootloader: "make flash FLASH_DEVICE={{ serial }}"
+      flash: "make flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: usb_katapult_or_make_flash

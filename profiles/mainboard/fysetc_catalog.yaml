@@ -1,0 +1,195 @@
+profiles:
+  - id: fysetc_catalyst_k
+    name: FYSETC CATALYST.K
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://wiki.fysetc.com/docs/Controllers
+      - https://wiki.fysetc.com/docs/Controllers/CATALYST.K
+    match:
+      mcu_name_hints:
+        - catalyst
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_chameleon_x5
+    name: FYSETC CHAMELEON X5
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://wiki.fysetc.com/docs/Controllers
+      - https://wiki.fysetc.com/docs/Controllers/CHAMELEON%20X5
+    match:
+      mcu_name_hints:
+        - chameleon
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_spider
+    name: FYSETC Spider
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://wiki.fysetc.com/docs/Controllers/SPIDER
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/Fysetc%20Spider%20V1.0/README.html
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/Fysetc%20Spider%20v2.2/README.html
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/Fysetc%20Spider%20v2.3/README.html
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/Fysetc%20Spider%20v3.0/README.html
+    match:
+      mcu_name_hints:
+        - spider
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_spider_v3_h7
+    name: FYSETC Spider V3 H7
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://wiki.fysetc.com/docs/Controllers/SPIDER_V3_H7
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/Fysetc%20Spider%20v3.0%20H7/README.html
+    match:
+      chips:
+        - stm32h723xx
+      mcu_name_hints:
+        - spider
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_spider_king
+    name: FYSETC Spider King
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://wiki.fysetc.com/docs/Controllers/FYSETC-SPIDER-KING
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/Fysetc%20Spider%20King/README.html
+    match:
+      mcu_name_hints:
+        - spider
+        - king
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_cheetah
+    name: FYSETC Cheetah
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://wiki.fysetc.com/docs/Controllers/CHEETAH
+    match:
+      mcu_name_hints:
+        - cheetah
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_cheetah_v20
+    name: FYSETC Cheetah V2.0
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://wiki.fysetc.com/docs/Controllers/CHEETAH_V2.0
+    match:
+      mcu_name_hints:
+        - cheetah
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_cheetah_v30
+    name: FYSETC Cheetah V3.0
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://wiki.fysetc.com/docs/Controllers/CHEETAH_V3.0
+    match:
+      mcu_name_hints:
+        - cheetah
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_e4
+    name: FYSETC E4
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://wiki.fysetc.com/docs/Controllers/E4
+    match:
+      mcu_name_hints:
+        - e4
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_s6
+    name: FYSETC S6
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://wiki.fysetc.com/docs/Controllers/FYSETC_S6
+    match:
+      mcu_name_hints:
+        - s6
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_f6_v13
+    name: FYSETC F6 V1.3
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://wiki.fysetc.com/docs/Controllers/F6_V1.3
+    match:
+      mcu_name_hints:
+        - f6
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_big_dipper
+    name: FYSETC Big Dipper
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://wiki.fysetc.com/docs/Controllers/BIG-DIPPER
+    match:
+      mcu_name_hints:
+        - big_dipper
+        - big-dipper
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_stridemax_dual_fd_v2
+    name: FYSETC StrideMax Dual FD V2
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://wiki.fysetc.com/docs/Controllers/STRIDEMAX_DUAL_FD_V2
+    match:
+      mcu_name_hints:
+        - stridemax
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_aio_ii
+    name: FYSETC AIO II
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://wiki.fysetc.com/docs/Controllers/AIO_II
+    match:
+      mcu_name_hints:
+        - aio
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile

@@ -1,0 +1,101 @@
+profiles:
+  - id: mellow_fly_rrf_e3_pro_v3_usb
+    name: Mellow FLY RRF E3 PRO V3 USB
+    vendor: Mellow
+    family: mainboard
+    source:
+      - https://mellow-3d.github.io/fly_rrf_e3_pro_v3_klipper_usb.html
+    match:
+      chips:
+        - stm32f407xx
+      mcu_name_hints:
+        - rrf
+        - e3
+        - pro
+      transports:
+        - usb
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F407
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      requires_manual_menuconfig: true
+    flash:
+      method: pending_verified_profile
+  - id: mellow_fly_cdy_v2_usb
+    name: Mellow Fly-CDY V2 USB
+    vendor: Mellow
+    family: mainboard
+    source:
+      - https://mellow-3d.github.io/fly_cdy_v2_klipper_usb.html
+    match:
+      chips:
+        - stm32f407xx
+      mcu_name_hints:
+        - cdy
+        - v2
+      transports:
+        - usb
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F407
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      requires_manual_menuconfig: true
+    flash:
+      method: pending_verified_profile
+  - id: mellow_fly_cdy_v3_usb
+    name: Mellow Fly-CDY V3 USB
+    vendor: Mellow
+    family: mainboard
+    source:
+      - https://mellow-3d.github.io/fly_cdy_v3_klipper_usb.html
+    match:
+      chips:
+        - stm32f407xx
+      mcu_name_hints:
+        - cdy
+        - v3
+      transports:
+        - usb
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F407
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      requires_manual_menuconfig: true
+    flash:
+      method: pending_verified_profile
+  - id: mellow_fly_407zg_usb
+    name: Mellow Fly-407ZG USB
+    vendor: Mellow
+    family: mainboard
+    source:
+      - https://mellow-3d.github.io/fly_407zg_klipper_usb.html
+    match:
+      chips:
+        - stm32f407xx
+      mcu_name_hints:
+        - 407zg
+      transports:
+        - usb
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F407
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      requires_manual_menuconfig: true
+    flash:
+      method: pending_verified_profile

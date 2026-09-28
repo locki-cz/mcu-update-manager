@@ -1,0 +1,55 @@
+profiles:
+  - id: mellow_fly_gemini_v2_usb
+    name: Mellow Fly-Gemini V2 USB
+    vendor: Mellow
+    family: mainboard
+    source:
+      - https://mellow-3d.github.io/fly_gemini_v2_klipper_usb.html
+    match:
+      chips:
+        - stm32f405xx
+      mcu_name_hints:
+        - gemini
+        - v2
+      transports:
+        - usb
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F405
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      requires_manual_menuconfig: true
+    flash:
+      method: pending_verified_profile
+    notes:
+      limitation: Added as a Mellow wiki placeholder until exact update path is verified.
+  - id: mellow_fly_gemini_v3_usb
+    name: Mellow Fly-Gemini V3 USB
+    vendor: Mellow
+    family: mainboard
+    source:
+      - https://mellow-3d.github.io/fly_gemini_v3_klipper_usb.html
+    match:
+      chips:
+        - stm32f405xx
+      mcu_name_hints:
+        - gemini
+        - v3
+      transports:
+        - usb
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F405
+      clock_reference: 8MHz crystal
+      bootloader_offset: 32KiB
+      communication: usb
+      usb_pins: PA11/PA12
+      requires_manual_menuconfig: true
+    flash:
+      method: pending_verified_profile
+    notes:
+      limitation: Added as a Mellow wiki placeholder until exact update path is verified.

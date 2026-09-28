@@ -1,0 +1,107 @@
+profiles:
+  - id: mellow_fly_sht36_v2_stm32f072_can
+    name: Mellow Fly-SHT36 V2 CAN STM32/APM32F072
+    vendor: Mellow
+    family: toolhead
+    source:
+      - https://mellow-3d.github.io/fly-sht36_v2_canboot_can.html
+      - https://mellow-3d.github.io/fly-sht36_v2_klipper_can.html
+      - https://mellow-3d.github.io/fly-sht36_v2_klipper_can_updating.html
+    match:
+      chips:
+        - stm32f072xx
+      mcu_name_hints:
+        - sht36
+        - v2
+      transports:
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F072
+      clock_reference: 8MHz crystal
+      bootloader_offset: 8KiB
+      communication: canbus
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+      gpio_pins_on_startup: "!PC13"
+      documented_bitrate: "1000000"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F072
+      clock_reference: 8MHz crystal
+      application_start_offset: 8KiB
+      communication: canbus
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+      status_led_pin: "!PC13"
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      command: "make flash FLASH_DEVICE=0483:df11"
+    update:
+      method: can_katapult
+      stop_klipper: true
+      enter_bootloader: "python3 ~/katapult/scripts/flashtool.py -i {{ can_interface }} -r -u {{ canbus_uuid }}"
+      flash: "python3 ~/katapult/scripts/flash_can.py -i {{ can_interface }} -f {{ artifact }} -u {{ canbus_uuid }}"
+      start_klipper: true
+    flash:
+      method: can_katapult
+  - id: mellow_fly_sht36_v2_gd32f103_can
+    name: Mellow Fly-SHT36 V2 CAN GD32F103
+    vendor: Mellow
+    family: toolhead
+    source:
+      - https://mellow-3d.github.io/fly-sht36_v2_canboot_can.html
+      - https://mellow-3d.github.io/fly-sht36_v2_klipper_can.html
+    match:
+      chips:
+        - stm32f103xx
+      mcu_name_hints:
+        - sht36
+        - v2
+      transports:
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F103
+      clock_reference: 8MHz crystal
+      bootloader_offset: 8KiB
+      communication: canbus
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+      documented_bitrate: "1000000"
+      requires_manual_menuconfig: true
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F103
+      clock_reference: 8MHz crystal
+      application_start_offset: 8KiB
+      communication: canbus
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "1eaf:0003"
+      command: "make flash FLASH_DEVICE=1eaf:0003"
+    update:
+      method: can_katapult
+      stop_klipper: true
+      enter_bootloader: "python3 ~/katapult/scripts/flashtool.py -i {{ can_interface }} -r -u {{ canbus_uuid }}"
+      flash: "python3 ~/katapult/scripts/flash_can.py -i {{ can_interface }} -f {{ artifact }} -u {{ canbus_uuid }}"
+      start_klipper: true
+    flash:
+      method: pending_verified_profile
+    notes:
+      limitation: GD32F103 handling must be verified in the installed Klipper/Kalico Kconfig before automatic build.

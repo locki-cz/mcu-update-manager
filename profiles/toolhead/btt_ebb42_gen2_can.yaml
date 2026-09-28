@@ -1,0 +1,65 @@
+id: btt_ebb42_gen2_can
+name: BigTreeTech EBB42 Gen2
+vendor: BigTreeTech
+family: toolhead
+source:
+  - https://canbus.esoterical.online/toolhead_flashing/common_hardware/BigTreeTech%20EBB42%20Gen2/README.html
+match:
+  chips:
+    - stm32g0b1xx
+  mcu_name_hints:
+    - ebb
+    - toolhead
+  transports:
+    - can
+fingerprint:
+  printer_cfg_pins:
+    strong:
+      - PB9
+      - PB8
+      - PB7
+build:
+  firmware: klipper
+  architecture: stm32
+  processor: STM32G0B1
+  clock_reference: 8MHz crystal
+  bootloader_offset: 8KiB
+  communication: canbus
+  can_rx_pin: PB12
+  can_tx_pin: PB13
+  can_bitrate: "{{ can_bitrate }}"
+bootloader:
+  firmware: katapult
+  type: katapult
+  architecture: stm32
+  processor: STM32G0B1
+  clock_reference: 8MHz crystal
+  application_start_offset: 8KiB
+  communication: canbus
+  can_rx_pin: PB12
+  can_tx_pin: PB13
+  can_bitrate: "{{ can_bitrate }}"
+initial_flash:
+  method: dfu_util
+  bootloader: katapult
+  dfu_vid_pid: "0483:df11"
+  artifact: "~/katapult/out/katapult.bin"
+  command: "dfu-util -a 0 -D ~/katapult/out/katapult.bin -s 0x08000000:leave"
+  physical_steps:
+    - Power off printer.
+    - Remove USB/CAN selection jumper.
+    - Connect USB to the breakout board USB-C port.
+    - Hold BOOT, press and release RST, wait 5 seconds, release BOOT.
+    - Reinstall USB/CAN selection jumper after DFU flashing.
+update:
+  method: can_katapult
+  stop_klipper: true
+  enter_bootloader: "python3 ~/katapult/scripts/flashtool.py -i {{ can_interface }} -r -u {{ canbus_uuid }}"
+  flash: "python3 ~/katapult/scripts/flashtool.py -i {{ can_interface }} -f {{ artifact }} -u {{ canbus_uuid }}"
+  start_klipper: true
+flash:
+  method: can_katapult
+notes:
+  dfu_vid_pid: "0483:df11"
+  can_mode: Install USB/CAN jumper.
+  dfu_mode: Remove USB/CAN jumper, connect USB through breakout board, hold BOOT, press/release RST, wait 5 seconds, release BOOT.

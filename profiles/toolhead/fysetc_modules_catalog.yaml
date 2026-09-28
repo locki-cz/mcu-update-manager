@@ -1,0 +1,126 @@
+profiles:
+  - id: fysetc_h36_combo_v2
+    name: FYSETC H36 Combo V2
+    vendor: FYSETC
+    family: toolhead
+    source:
+      - https://wiki.fysetc.com/docs/modules/H36%20Combo%20V2
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/Fysetc%20H36%20v2.0/README.html
+    match:
+      mcu_name_hints:
+        - h36
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_catalyst_k_toolhead
+    name: FYSETC Catalyst.K ToolHead
+    vendor: FYSETC
+    family: toolhead
+    source:
+      - https://wiki.fysetc.com/docs/modules/Catalyst.K%20ToolHead
+    match:
+      mcu_name_hints:
+        - catalyst
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_sb_combo_v2
+    name: FYSETC SB Combo V2
+    vendor: FYSETC
+    family: toolhead
+    source:
+      - https://wiki.fysetc.com/docs/modules/SB_Combo_V2
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/Fysetc%20SB%20Combo%20V2/README.html
+    match:
+      mcu_name_hints:
+        - sb
+        - combo
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_h36_combo
+    name: FYSETC H36 Combo
+    vendor: FYSETC
+    family: toolhead
+    source:
+      - https://wiki.fysetc.com/docs/modules/H36%20Combo
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/Fysetc%20H36/README.html
+    match:
+      mcu_name_hints:
+        - h36
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_hexa_distro_fusion
+    name: FYSETC Hexa Distro Fusion
+    vendor: FYSETC
+    family: mainboard
+    source:
+      - https://wiki.fysetc.com/docs/modules/Hexa%20Distro%20Fusion
+      - https://canbus.esoterical.online/mainboard_flashing/common_hardware/Fysetc%20Hexa%20Distro%20Fusion/README.html
+    match:
+      mcu_name_hints:
+        - hexa
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_sb_can_toolhead
+    name: FYSETC SB CAN ToolHead
+    vendor: FYSETC
+    family: toolhead
+    source:
+      - https://wiki.fysetc.com/docs/modules/SB%20CAN%20ToolHead
+      - https://canbus.esoterical.online/toolhead_flashing/common_hardware/Fysetc%20SB-CAN-TH/README.html
+    match:
+      mcu_name_hints:
+        - sb
+        - toolhead
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_ucan
+    name: FYSETC UCAN
+    vendor: FYSETC
+    family: adapter
+    source:
+      - https://wiki.fysetc.com/docs/modules/UCAN
+    match:
+      mcu_name_hints:
+        - ucan
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile
+  - id: fysetc_m36_hub_v1
+    name: FYSETC M36 HUB V1
+    vendor: FYSETC
+    family: toolhead
+    source:
+      - https://wiki.fysetc.com/docs/modules/M36_HUB_V1
+    match:
+      mcu_name_hints:
+        - m36
+      transports:
+        - can
+    build:
+      requires_esoterical_image_extraction: true
+    flash:
+      method: pending_verified_profile

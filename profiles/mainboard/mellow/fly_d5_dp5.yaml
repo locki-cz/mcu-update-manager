@@ -1,0 +1,140 @@
+profiles:
+  - id: mellow_fly_d5_can
+    name: Mellow FLY-D5 CAN
+    vendor: Mellow
+    family: mainboard
+    source:
+      - https://mellow-3d.github.io/fly_d5_katapult_can.html
+      - https://mellow-3d.github.io/fly_d5_klipper_can.html
+    match:
+      chips:
+        - stm32f072xx
+      mcu_name_hints:
+        - d5
+      transports:
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F072
+      clock_reference: 8MHz crystal
+      bootloader_offset: 8KiB
+      communication: canbus
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F072
+      clock_reference: 8MHz crystal
+      application_start_offset: 8KiB
+      communication: canbus
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      command: "make flash FLASH_DEVICE=0483:df11"
+    update:
+      method: can_katapult
+      stop_klipper: true
+      enter_bootloader: "python3 ~/katapult/scripts/flashtool.py -i {{ can_interface }} -r -u {{ canbus_uuid }}"
+      flash: "python3 ~/katapult/scripts/flash_can.py -i {{ can_interface }} -f {{ artifact }} -u {{ canbus_uuid }}"
+      start_klipper: true
+    flash:
+      method: can_katapult
+  - id: mellow_fly_d5_usb
+    name: Mellow FLY-D5 USB
+    vendor: Mellow
+    family: mainboard
+    source:
+      - https://mellow-3d.github.io/fly_d5_katapult_usb.html
+      - https://mellow-3d.github.io/fly_d5_klipper_usb.html
+    match:
+      chips:
+        - stm32f072xx
+      mcu_name_hints:
+        - d5
+      transports:
+        - usb
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F072
+      clock_reference: 8MHz crystal
+      bootloader_offset: 8KiB
+      communication: usb
+      usb_pins: PA11/PA12
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F072
+      clock_reference: 8MHz crystal
+      application_start_offset: 8KiB
+      communication: usb
+      usb_pins: PA11/PA12
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      command: "make flash FLASH_DEVICE=0483:df11"
+    update:
+      method: usb_katapult
+      stop_klipper: true
+      flash: "make KCONFIG_CONFIG={{ config }} flash FLASH_DEVICE={{ serial }}"
+      start_klipper: true
+    flash:
+      method: pending_usb_profile
+  - id: mellow_fly_dp5_can
+    name: Mellow FLY-DP5 CAN
+    vendor: Mellow
+    family: mainboard
+    source:
+      - https://mellow-3d.github.io/fly_dp5_katapult_can.html
+      - https://mellow-3d.github.io/fly_dp5_klipper_can.html
+    match:
+      chips:
+        - stm32f072xx
+      mcu_name_hints:
+        - dp5
+      transports:
+        - can
+    build:
+      firmware: klipper
+      architecture: stm32
+      processor: STM32F072
+      clock_reference: 8MHz crystal
+      bootloader_offset: 8KiB
+      communication: canbus
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+    bootloader:
+      firmware: katapult
+      type: katapult
+      architecture: stm32
+      processor: STM32F072
+      clock_reference: 8MHz crystal
+      application_start_offset: 8KiB
+      communication: canbus
+      can_rx_pin: PB8
+      can_tx_pin: PB9
+      can_bitrate: "{{ can_bitrate }}"
+    initial_flash:
+      method: dfu_util
+      bootloader: katapult
+      dfu_vid_pid: "0483:df11"
+      command: "make flash FLASH_DEVICE=0483:df11"
+    update:
+      method: can_katapult
+      stop_klipper: true
+      enter_bootloader: "python3 ~/katapult/scripts/flashtool.py -i {{ can_interface }} -r -u {{ canbus_uuid }}"
+      flash: "python3 ~/katapult/scripts/flash_can.py -i {{ can_interface }} -f {{ artifact }} -u {{ canbus_uuid }}"
+      start_klipper: true
+    flash:
+      method: can_katapult
