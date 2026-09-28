@@ -98,6 +98,12 @@
                     {{ lastScanText }}
                 </v-col>
             </v-row>
+            <div v-if="status" class="px-6 pb-2">
+                <v-btn small outlined color="primary" :disabled="busy" @click="openCustomProfile()">
+                    <v-icon small left>{{ mdiPlus }}</v-icon>
+                    Custom hardware profile
+                </v-btn>
+            </div>
 
             <template v-if="devices.length">
                 <template v-for="(device, index) in devices">
@@ -236,7 +242,7 @@
                                         class="mt-2 mb-0">
                                         {{ firmwareStateText(device) }}
                                     </v-alert>
-                                    <v-select
+                                    <v-autocomplete
                                         v-if="canSelectHardwareProfile(device)"
                                         :value="selectedHardwareProfile(device)"
                                         dense
@@ -249,6 +255,18 @@
                                         :label="$t('Machine.McuUpdateManagerPanel.HardwareProfile')"
                                         :disabled="busy || !hardwareProfileOptions(device).length"
                                         @change="setSelectedHardwareProfile(device, $event)" />
+                                    <div v-if="canSelectHardwareProfile(device)" class="mt-2">
+                                        <v-btn small text color="primary" :disabled="busy || !selectedHardwareProfile(device)"
+                                            @click="openCustomProfile(selectedHardwareProfile(device), false, device.id)">
+                                            <v-icon small left>{{ mdiContentCopy }}</v-icon>
+                                            Copy profile
+                                        </v-btn>
+                                        <v-btn v-if="selectedProfileIsCustom(device)" small text color="primary" :disabled="busy"
+                                            @click="openCustomProfile(selectedHardwareProfile(device), true, device.id)">
+                                            <v-icon small left>{{ mdiPencil }}</v-icon>
+                                            Edit custom profile
+                                        </v-btn>
+                                    </div>
                                     <div
                                         v-if="profileConfidence(device) && device.actions?.needs_confirmation"
                                         class="mt-2 d-flex align-center flex-wrap">
@@ -687,6 +705,75 @@
                 </v-col>
             </v-row>
         </v-card-text>
+        <v-dialog v-model="customProfileDialog" max-width="760" scrollable>
+            <v-card>
+                <v-card-title>{{ editingCustomProfileId ? 'Edit custom profile' : 'New custom profile' }}</v-card-title>
+                <v-card-text>
+                    <v-alert v-if="customProfileError" dense text type="error">{{ customProfileError }}</v-alert>
+                    <v-alert dense text type="warning">
+                        Verify the exact board revision, pins and bootloader offset before building or flashing.
+                        Saving a profile does not flash a device.
+                    </v-alert>
+                    <v-autocomplete v-if="!editingCustomProfileId" v-model="customProfileTemplateId"
+                        :items="customProfileTemplates" item-text="label" item-value="value"
+                        label="Start from an existing profile (optional)" clearable outlined dense
+                        :disabled="customProfileSaving" @change="loadCustomProfileTemplate" />
+                    <v-row dense>
+                        <v-col cols="12" sm="7"><v-text-field v-model="customProfileFields.name" label="Profile name" outlined dense /></v-col>
+                        <v-col cols="12" sm="5"><v-text-field v-model="customProfileFields.vendor" label="Vendor" outlined dense /></v-col>
+                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.family" label="Category" outlined dense
+                            :items="['mainboard', 'toolhead', 'expansion', 'cartographer', 'beacon']" /></v-col>
+                        <v-col cols="12" sm="6"><v-text-field v-model="customProfileFields.chip" label="MCU chip (e.g. stm32g0b1xx)" outlined dense /></v-col>
+                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.transport" label="Detected transport" outlined dense
+                            :items="['can', 'usb']" /></v-col>
+                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.architecture" label="Architecture" outlined dense
+                            :items="['stm32', 'rp2040']" /></v-col>
+                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.processor" label="Processor" outlined dense
+                            :items="customProcessorOptions" /></v-col>
+                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.clock_reference" label="Clock reference" outlined dense
+                            :items="['8MHz crystal', '12MHz crystal', '25MHz crystal', 'Internal clock']" /></v-col>
+                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.bootloader_offset" label="Klipper bootloader offset" outlined dense
+                            :items="['No bootloader', '8KiB', '16KiB', '32KiB', '64KiB', '128KiB']" /></v-col>
+                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.communication" label="Klipper communication" outlined dense
+                            :items="['usb', 'canbus', 'usb_to_canbus_bridge']" /></v-col>
+                        <v-col v-if="customProfileFields.communication !== 'usb'" cols="12" sm="6">
+                            <v-text-field v-model="customProfileFields.can_rx_pin" label="Klipper CAN RX pin" outlined dense /></v-col>
+                        <v-col v-if="customProfileFields.communication !== 'usb'" cols="12" sm="6">
+                            <v-text-field v-model="customProfileFields.can_tx_pin" label="Klipper CAN TX pin" outlined dense /></v-col>
+                        <v-col v-if="customProfileFields.communication !== 'canbus'" cols="12" sm="6">
+                            <v-text-field v-model="customProfileFields.usb_pins" label="USB pins (e.g. PA11/PA12)" outlined dense /></v-col>
+                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.flash_method" label="Update method" outlined dense
+                            :items="customFlashMethods" /></v-col>
+                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.initial_flash_method" label="Initial flash method" outlined dense
+                            :items="['dfu_util', 'klipper_make_flash_dfu', 'rp2040_bootsel_make_flash']" /></v-col>
+                        <v-col v-if="customProfileFields.architecture === 'stm32'" cols="12" sm="6">
+                            <v-text-field v-model="customProfileFields.dfu_vid_pid" label="DFU VID:PID" outlined dense /></v-col>
+                        <v-col cols="12"><v-checkbox v-model="customProfileFields.use_katapult" label="Build Katapult for this board" hide-details /></v-col>
+                        <template v-if="customProfileFields.use_katapult">
+                            <v-col cols="12" sm="6"><v-select v-model="customProfileFields.application_start_offset"
+                                label="Katapult application start offset" outlined dense
+                                :items="['8KiB', '16KiB', '32KiB', '64KiB', '128KiB']" /></v-col>
+                            <v-col cols="12" sm="6"><v-select v-model="customProfileFields.bootloader_communication"
+                                label="Katapult communication" outlined dense :items="['usb', 'canbus']" /></v-col>
+                            <v-col cols="12" sm="6"><v-select v-model="customProfileFields.bootloader_clock_reference"
+                                label="Katapult clock reference" outlined dense
+                                :items="['8MHz crystal', '12MHz crystal', '25MHz crystal', 'Internal clock']" /></v-col>
+                            <v-col v-if="customProfileFields.bootloader_communication === 'canbus'" cols="12" sm="6">
+                                <v-text-field v-model="customProfileFields.bootloader_can_rx_pin" label="Katapult CAN RX pin" outlined dense /></v-col>
+                            <v-col v-if="customProfileFields.bootloader_communication === 'canbus'" cols="12" sm="6">
+                                <v-text-field v-model="customProfileFields.bootloader_can_tx_pin" label="Katapult CAN TX pin" outlined dense /></v-col>
+                            <v-col v-if="customProfileFields.bootloader_communication === 'usb'" cols="12" sm="6">
+                                <v-text-field v-model="customProfileFields.bootloader_usb_pins" label="Katapult USB pins" outlined dense /></v-col>
+                        </template>
+                    </v-row>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer />
+                    <v-btn text @click="customProfileDialog = false">Cancel</v-btn>
+                    <v-btn color="primary" :loading="customProfileSaving" @click="saveCustomProfile">Save profile</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </panel>
 </template>
 
@@ -709,6 +796,8 @@ import {
     mdiHammerWrench,
     mdiHistory,
     mdiProgressClock,
+    mdiPlus,
+    mdiPencil,
     mdiRadar,
     mdiShieldCheck,
     mdiSourceBranch,
@@ -898,6 +987,10 @@ interface McuUpdateManagerStatus {
     profile_catalog?: Array<{
         id: string
         name?: string
+        custom?: boolean
+        chips?: string[]
+        transports?: string[]
+        supports_dfu?: boolean
         targets?: Array<{
             communication: string
             kind: 'katapult' | 'klipper'
@@ -916,6 +1009,43 @@ interface McuUpdateManagerStatus {
         total?: number
     }
     status?: string
+}
+
+interface CustomProfileFields {
+    name: string
+    vendor: string
+    family: string
+    chip: string
+    transport: string
+    architecture: string
+    processor: string
+    clock_reference: string
+    bootloader_offset: string
+    communication: string
+    can_rx_pin: string
+    can_tx_pin: string
+    usb_pins: string
+    flash_method: string
+    use_katapult: boolean
+    application_start_offset: string
+    bootloader_communication: string
+    bootloader_clock_reference: string
+    bootloader_can_rx_pin: string
+    bootloader_can_tx_pin: string
+    bootloader_usb_pins: string
+    initial_flash_method: string
+    dfu_vid_pid: string
+}
+
+function emptyCustomProfile(): CustomProfileFields {
+    return {
+        name: '', vendor: '', family: 'toolhead', chip: '', transport: 'can', architecture: 'stm32',
+        processor: '', clock_reference: '8MHz crystal', bootloader_offset: '8KiB', communication: 'canbus',
+        can_rx_pin: '', can_tx_pin: '', usb_pins: 'PA11/PA12', flash_method: 'can_katapult',
+        use_katapult: true, application_start_offset: '8KiB', bootloader_communication: 'canbus',
+        bootloader_clock_reference: '8MHz crystal', bootloader_can_rx_pin: '', bootloader_can_tx_pin: '',
+        bootloader_usb_pins: 'PA11/PA12', initial_flash_method: 'dfu_util', dfu_vid_pid: '0483:df11',
+    }
 }
 
 interface McuUpdateManagerCachedJob {
@@ -951,6 +1081,8 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
     mdiHammerWrench = mdiHammerWrench
     mdiHistory = mdiHistory
     mdiProgressClock = mdiProgressClock
+    mdiPlus = mdiPlus
+    mdiPencil = mdiPencil
     mdiRadar = mdiRadar
     mdiShieldCheck = mdiShieldCheck
     mdiSourceBranch = mdiSourceBranch
@@ -972,6 +1104,14 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
     selectedDfuTargetKeys: Record<string, string> = {}
     selectedHardwareProfileIds: Record<string, string> = {}
     selectedArtifactRefs: Record<string, string> = {}
+    customProfileDialog = false
+    customProfileSaving = false
+    customProfileError = ''
+    customProfileTemplateId = ''
+    editingCustomProfileId = ''
+    customProfileDeviceId = ''
+    customProfileFields: CustomProfileFields = emptyCustomProfile()
+    customProfileTemplateRequestId = 0
     scanPhaseIndex = 0
     scanPhaseTimer: number | null = null
     status: McuUpdateManagerStatus | null = null
@@ -983,6 +1123,24 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
 
     get devices(): McuUpdateManagerDevice[] {
         return this.status?.devices ?? []
+    }
+
+    get customProfileTemplates(): Array<{ label: string; value: string }> {
+        return (this.status?.profile_catalog ?? []).map((profile) => ({
+            label: `${profile.custom ? 'Custom | ' : ''}${profile.name ?? profile.id}`,
+            value: profile.id,
+        }))
+    }
+
+    get customProcessorOptions(): string[] {
+        return ['STM32F072', 'STM32F103', 'STM32F405', 'STM32F407', 'STM32F429', 'STM32F446',
+            'STM32G0B1', 'STM32H723', 'STM32H743', 'RP2040']
+    }
+
+    get customFlashMethods(): string[] {
+        return this.customProfileFields.transport === 'usb'
+            ? ['klipper_make_flash_usb', 'usb_make_flash']
+            : ['can_katapult', 'usb_katapult_or_make_flash']
     }
 
     get versionOptions(): FirmwareVersionOption[] {
@@ -1236,14 +1394,85 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
     }
 
     canSelectHardwareProfile(device: McuUpdateManagerDevice): boolean {
-        return !this.isCartographer(device) && (device.likely_profiles?.length ?? 0) > 0
+        return !this.isCartographer(device) && this.hardwareProfileOptions(device).length > 0
     }
 
     hardwareProfileOptions(device: McuUpdateManagerDevice): Array<{ label: string; value: string }> {
-        return (device.likely_profiles ?? []).map((profile) => ({
-            label: `${profile.name ?? profile.id}${profile.score ? ` (${profile.score})` : ''}`,
-            value: profile.id,
-        }))
+        const scores = new Map((device.likely_profiles ?? []).map((item) => [item.id, item.score]))
+        return (this.status?.profile_catalog ?? [])
+            .filter((profile) => !this.isDfuDevice(device) || profile.supports_dfu)
+            .filter((profile) => !device.detected_chip || !profile.chips?.length ||
+                profile.chips.some((chip) => chip.toLowerCase() === device.detected_chip?.toLowerCase()))
+            .filter((profile) => this.isDfuDevice(device) || !device.transport || !profile.transports?.length ||
+                profile.transports.includes(device.transport))
+            .map((profile) => ({
+                label: `${profile.custom ? 'Custom | ' : ''}${profile.name ?? profile.id}${scores.get(profile.id) ? ` (${scores.get(profile.id)})` : ''}`,
+                value: profile.id,
+            }))
+    }
+
+    selectedProfileIsCustom(device: McuUpdateManagerDevice): boolean {
+        return !!this.status?.profile_catalog?.find(
+            (item) => item.id === this.selectedHardwareProfile(device)
+        )?.custom
+    }
+
+    async openCustomProfile(profileId = '', edit = false, deviceId = '') {
+        this.customProfileDialog = true
+        this.customProfileError = ''
+        this.customProfileDeviceId = deviceId
+        this.editingCustomProfileId = edit ? profileId : ''
+        this.customProfileTemplateId = edit ? '' : profileId
+        this.customProfileFields = emptyCustomProfile()
+        if (profileId) await this.loadCustomProfileTemplate(profileId)
+    }
+
+    async loadCustomProfileTemplate(profileId: string) {
+        const requestId = ++this.customProfileTemplateRequestId
+        if (!profileId) {
+            this.customProfileFields = emptyCustomProfile()
+            return
+        }
+        try {
+            const detail = await this.fetchApi<{ fields: Partial<CustomProfileFields> }>(
+                `/machine/mcu_update_manager/profile?profile_id=${encodeURIComponent(profileId)}`
+            )
+            if (requestId !== this.customProfileTemplateRequestId) return
+            this.customProfileFields = {
+                ...emptyCustomProfile(), ...detail.fields,
+                name: this.editingCustomProfileId ? detail.fields.name ?? '' : `${detail.fields.name ?? profileId} Custom`,
+            }
+            this.customProfileError = ''
+        } catch (error) {
+            this.customProfileError = this.formatError(error)
+        }
+    }
+
+    async saveCustomProfile() {
+        this.customProfileSaving = true
+        this.customProfileError = ''
+        try {
+            const result = await this.fetchApi<{ profile: { id: string } }>(
+                '/machine/mcu_update_manager/profile/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fields_json: JSON.stringify(this.customProfileFields),
+                        template_id: this.customProfileTemplateId,
+                        profile_id: this.editingCustomProfileId,
+                    }),
+                }
+            )
+            this.customProfileDialog = false
+            await this.refresh()
+            if (this.customProfileDeviceId) {
+                this.$set(this.selectedHardwareProfileIds, this.customProfileDeviceId, result.profile.id)
+            }
+        } catch (error) {
+            this.customProfileError = this.formatError(error)
+        } finally {
+            this.customProfileSaving = false
+        }
     }
 
     selectedHardwareProfile(device: McuUpdateManagerDevice): string {

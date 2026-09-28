@@ -11,7 +11,9 @@ from urllib.parse import quote
 from urllib.request import urlopen
 
 from .io_utils import atomic_write_json
+from .custom_profiles import get_profile, is_custom_profile, profile_fields, save_custom_profile
 from .operation_cache import finish_operation, is_active, mark_interrupted, new_operation, read_operation, write_operation
+from .profiles import load_profiles
 from .status import latest_operation_for_device
 
 
@@ -34,6 +36,7 @@ class MCUUpdateManagerComponent:
         self.kalico_path = config.get("kalico_path", "~/kalico")
         self.cartographer_firmware_path = config.get("cartographer_firmware_path", "~/cartographer_firmware")
         self.profile_dirs = config.get("profile_dirs", "profiles")
+        self.custom_profile_dir = Path(config.get("custom_profile_dir", "~/printer_data/config/mcu_update_manager/profiles")).expanduser()
         self.build_root = config.get("build_root", "builds")
         self.artifact_root = config.get("artifact_root", "artifacts")
         self.cache_path = self.repo_path / config.get("cache_path", "cache/operation.json")
@@ -64,6 +67,16 @@ class MCUUpdateManagerComponent:
             "/machine/mcu_update_manager/confirm",
             ["POST"],
             self._handle_confirm,
+        )
+        self.server.register_endpoint(
+            "/machine/mcu_update_manager/profile",
+            ["GET"],
+            self._handle_get_profile,
+        )
+        self.server.register_endpoint(
+            "/machine/mcu_update_manager/profile/save",
+            ["POST"],
+            self._handle_save_profile,
         )
         self.server.register_endpoint(
             "/machine/mcu_update_manager/switch_firmware_ref",
@@ -154,8 +167,20 @@ class MCUUpdateManagerComponent:
     async def _handle_confirm(self, web_request: Any) -> dict[str, Any]:
         device_id = web_request.get_str("device_id")
         profile_id = web_request.get_str("profile_id")
+        profile = get_profile(load_profiles(self._profile_paths()), profile_id)
         discovery_path = self.repo_path / "discovery.json"
         discovery = await self._run_json(self._discover_command())
+        selected = next((item for item in discovery.get("devices", []) if item.get("id") == device_id), None)
+        if selected is None:
+            raise self.server.error(f"Device not found in discovery: {device_id}")
+        chip = str(selected.get("detected_chip") or "").lower()
+        transport = str(selected.get("transport") or "").lower()
+        chips = [str(item).lower() for item in profile.match.get("chips", [])]
+        transports = [str(item).lower() for item in profile.match.get("transports", [])]
+        if chip and chips and chip not in chips:
+            raise self.server.error(f"Profile {profile_id} is for {', '.join(chips)}, not {chip}.")
+        if transport != "dfu" and transport and transports and transport not in transports:
+            raise self.server.error(f"Profile {profile_id} does not support {transport}.")
         atomic_write_json(discovery_path, discovery)
 
         result = await self._run_json(
@@ -173,6 +198,30 @@ class MCUUpdateManagerComponent:
             ]
         )
         return {"status": "ok", "result": result}
+
+    async def _handle_get_profile(self, web_request: Any) -> dict[str, Any]:
+        profile = get_profile(load_profiles(self._profile_paths()), web_request.get_str("profile_id"))
+        return {
+            "id": profile.id,
+            "custom": is_custom_profile(profile, self.custom_profile_dir),
+            "fields": profile_fields(profile),
+        }
+
+    async def _handle_save_profile(self, web_request: Any) -> dict[str, Any]:
+        if (self.active_task and not self.active_task.done()) or is_active(read_operation(self.cache_path)):
+            raise self.server.error("A firmware operation is running. Save the profile after it finishes.")
+        try:
+            fields = json.loads(web_request.get_str("fields_json"))
+            result = save_custom_profile(
+                self._profile_paths(),
+                self.custom_profile_dir,
+                fields,
+                template_id=web_request.get_str("template_id", "") or None,
+                profile_id=web_request.get_str("profile_id", "") or None,
+            )
+        except (ValueError, OSError, json.JSONDecodeError) as exc:
+            raise self.server.error(str(exc)) from exc
+        return {"status": "ok", "profile": result}
 
     async def _handle_switch_firmware_ref(self, web_request: Any) -> dict[str, Any]:
         await self._ensure_not_printing()
@@ -460,6 +509,8 @@ class MCUUpdateManagerComponent:
             "--serial-dir",
             self.serial_dir,
             *self._profile_args(),
+            "--custom-profile-dir",
+            str(self.custom_profile_dir),
             "--can-interface",
             self.can_interface,
             "--can-bitrate",
@@ -510,8 +561,14 @@ class MCUUpdateManagerComponent:
         return [python, "-m", "mcu_update_manager.cli"]
 
     def _profile_args(self) -> list[str]:
+        return ["--profiles", *self._profile_paths()]
+
+    def _profile_paths(self) -> list[str]:
         paths = [item.strip() for item in self.profile_dirs.split(",") if item.strip()]
-        return ["--profiles", *paths]
+        custom = str(self.custom_profile_dir)
+        if custom not in paths:
+            paths.append(custom)
+        return paths
 
     async def _run_json(self, command: list[str]) -> dict[str, Any]:
         process = await asyncio.create_subprocess_exec(

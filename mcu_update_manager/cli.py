@@ -185,6 +185,7 @@ def main() -> None:
     status_parser.add_argument("--printer-cfg", required=True)
     status_parser.add_argument("--serial-dir", default="/dev/serial/by-id")
     status_parser.add_argument("--profiles", nargs="+", default=["profiles"])
+    status_parser.add_argument("--custom-profile-dir")
     status_parser.add_argument("--can-interface", default="can0")
     status_parser.add_argument("--can-query-output")
     status_parser.add_argument("--katapult-path", default="~/katapult")
@@ -402,6 +403,7 @@ def main() -> None:
             printer_cfg=args.printer_cfg,
             serial_dir=args.serial_dir,
             profile_paths=args.profiles,
+            custom_profile_dir=args.custom_profile_dir,
             can_interface=args.can_interface,
             can_query_output=args.can_query_output,
             katapult_path=args.katapult_path,

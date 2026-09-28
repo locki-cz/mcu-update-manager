@@ -355,6 +355,7 @@ def create_artifact_manifest(result: dict[str, Any]) -> dict[str, Any]:
         "profile": {
             "id": profile.get("id"),
             "name": profile.get("name"),
+            "digest": profile.get("digest"),
         },
         "firmware_source": {
             "project": firmware_source.get("project"),

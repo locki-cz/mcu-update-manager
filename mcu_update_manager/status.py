@@ -16,6 +16,7 @@ def collect_status(
     printer_cfg: str,
     serial_dir: str = "/dev/serial/by-id",
     profile_paths: list[str] | None = None,
+    custom_profile_dir: str | None = None,
     can_interface: str = "can0",
     can_query_output: str | None = None,
     katapult_path: str | None = "~/katapult",
@@ -109,7 +110,7 @@ def collect_status(
         "discovery": discovery.get("discovery", {}),
         "serial_devices": discovery.get("serial_devices", []),
         "can_nodes": discovery.get("can_nodes", []),
-        "profile_catalog": profile_catalog(profile_paths or ["profiles"]),
+        "profile_catalog": profile_catalog(profile_paths or ["profiles"], custom_profile_dir),
         "summary": status_summary(devices),
         "devices": devices,
     }

@@ -13,9 +13,10 @@ from .dfu_target import select_dfu_port
 from .io_utils import atomic_write_json
 from .prepare_build import generate_klipper_dot_config, sanitize_path_part
 from .profiles import HardwareProfile, automatic_build_ready, load_profiles
+from .custom_profiles import is_custom_profile
 
 
-def profile_catalog(profile_paths: list[str | Path]) -> list[dict[str, Any]]:
+def profile_catalog(profile_paths: list[str | Path], custom_profile_dir: str | Path | None = None) -> list[dict[str, Any]]:
     profiles = load_profiles(profile_paths)
     items = []
     for profile in profiles:
@@ -27,6 +28,9 @@ def profile_catalog(profile_paths: list[str | Path]) -> list[dict[str, Any]]:
                 "vendor": profile.vendor,
                 "family": profile.family,
                 "path": profile.path,
+                "custom": bool(custom_profile_dir and is_custom_profile(profile, custom_profile_dir)),
+                "chips": profile.match.get("chips", []),
+                "transports": profile.match.get("transports", []),
                 "supports_dfu": bool(initial),
                 "supports_katapult": automatic_build_ready(profile.bootloader),
                 "supports_klipper": automatic_build_ready(profile.build),
