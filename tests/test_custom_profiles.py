@@ -99,6 +99,15 @@ class CustomProfilesTest(unittest.TestCase):
         self.assertFalse(profile.bootloader)
         self.assertEqual(profile.flash["method"], "klipper_make_flash_usb")
 
+    def test_copy_usb_can_bridge_uses_can_transport(self) -> None:
+        original = get_profile(load_profiles([CATALOG]), "esoterical_bigtreetech_manta_m8p_v20_usb_can_bridge")
+        fields = {**profile_fields(original), "name": "My Manta bridge"}
+        self.assertEqual(fields["transport"], "can")
+        self.assertEqual(fields["processor"], "STM32H723")
+        self.assertEqual(fields["can_rx_pin"], "PD0")
+        saved = save_custom_profile(self.paths, self.custom, fields, template_id=original.id)
+        self.assertEqual(saved["fields"]["transport"], "can")
+
     def test_create_profile_without_template(self) -> None:
         fields = self.fields("My new board")
         saved = save_custom_profile(self.paths, self.custom, fields)

@@ -988,6 +988,7 @@ interface McuUpdateManagerStatus {
         id: string
         name?: string
         custom?: boolean
+        supports_klipper?: boolean
         chips?: string[]
         transports?: string[]
         supports_dfu?: boolean
@@ -1126,7 +1127,7 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
     }
 
     get customProfileTemplates(): Array<{ label: string; value: string }> {
-        return (this.status?.profile_catalog ?? []).map((profile) => ({
+        return (this.status?.profile_catalog ?? []).filter((profile) => profile.supports_klipper).map((profile) => ({
             label: `${profile.custom ? 'Custom | ' : ''}${profile.name ?? profile.id}`,
             value: profile.id,
         }))
@@ -1445,6 +1446,7 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
             this.customProfileError = ''
         } catch (error) {
             this.customProfileError = this.formatError(error)
+            this.customProfileFields = emptyCustomProfile()
         }
     }
 

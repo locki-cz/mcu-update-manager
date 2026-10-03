@@ -31,12 +31,14 @@ def profile_fields(profile: HardwareProfile) -> dict[str, Any]:
     build = profile.build
     boot = profile.bootloader
     initial = profile.initial_flash
+    transports = profile.match.get("transports", [])
+    expected_transport = "can" if build.get("communication") in {"canbus", "usb_to_canbus_bridge"} else "usb"
     return {
         "name": profile.name,
         "vendor": profile.vendor,
         "family": profile.family,
         "chip": next(iter(profile.match.get("chips", [])), ""),
-        "transport": next(iter(profile.match.get("transports", [])), ""),
+        "transport": expected_transport if expected_transport in transports else next(iter(transports), ""),
         "architecture": build.get("architecture", ""),
         "processor": build.get("processor", ""),
         "clock_reference": build.get("clock_reference", ""),
