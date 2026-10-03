@@ -564,7 +564,12 @@ class MCUUpdateManagerComponent:
         return ["--profiles", *self._profile_paths()]
 
     def _profile_paths(self) -> list[str]:
-        paths = [item.strip() for item in self.profile_dirs.split(",") if item.strip()]
+        paths = []
+        for item in self.profile_dirs.split(","):
+            if not item.strip():
+                continue
+            path = Path(item.strip()).expanduser()
+            paths.append(str(path if path.is_absolute() else self.repo_path / path))
         custom = str(self.custom_profile_dir)
         if custom not in paths:
             paths.append(custom)
