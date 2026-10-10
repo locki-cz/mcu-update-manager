@@ -37,7 +37,7 @@ systemctl is-active moonraker
 journalctl -u moonraker -n 80 --no-pager
 ```
 
-The API response should contain `devices` (possibly empty before discovery). A 404 means the Moonraker component did not load. Check its error in the journal. The Moonraker entry file must be a **regular file**, not a symlink to the backend module; the installer handles this explicitly.
+The API response should contain `devices` (possibly empty before discovery). A 404 means the Moonraker component did not load. Check its error in the journal. The Moonraker entry should link to `~/mcu-update-manager/moonraker_component_entry.py`, **not** directly to `mcu_update_manager/moonraker_component.py`; the installer handles this. If the status endpoint works but a newer frontend reports empty hardware menus, check `/machine/mcu_update_manager/profile/options`. A 404 there means Moonraker is still loading an older component; update the checkout and restart Moonraker.
 
 The installer prints the backup directory it created. To restore the previous Mainsail UI, extract its `mainsail-*.tar.gz` backup into your home directory. Restore the corresponding `moonraker.conf` and component backup only if you also want to remove the backend integration, then restart Moonraker.
 
