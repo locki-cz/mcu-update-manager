@@ -763,10 +763,10 @@
                             :items="customBootloaderOffsets" @change="customOffsetChanged" /></v-col>
                         <v-col v-if="customProfileFields.architecture === 'stm32'" cols="12" sm="6"><v-select v-model="customProfileFields.clock_reference" label="Clock reference" outlined dense
                             :items="customProcessor?.clock_references ?? []" /></v-col>
-                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.communication" label="Communication interface" outlined dense
-                            :items="customProcessor?.communications ?? []" @change="customCommunicationChanged" /></v-col>
-                        <v-col v-if="customProfileFields.communication !== 'usb'" cols="12" sm="6">
-                            <v-select v-model="customCanPins" :label="customProfileFields.communication === 'usb_to_canbus_bridge' ? 'CAN bus interface' : 'Communication interface CAN pins'" outlined dense
+                        <v-col cols="12" sm="6"><v-select v-model="customCommunicationChoice" label="Communication interface" outlined dense
+                            :items="customCommunicationChoices" item-text="label" item-value="value" :disabled="!customProcessor" /></v-col>
+                        <v-col v-if="customProfileFields.communication === 'usb_to_canbus_bridge'" cols="12" sm="6">
+                            <v-select v-model="customCanPins" label="CAN bus interface" outlined dense
                                 :items="customCanPinChoices" item-text="label" item-value="value" :disabled="!customProcessor" /></v-col>
                         <v-col v-if="customProfileFields.communication !== 'canbus' && customProfileFields.architecture === 'stm32'" cols="12" sm="6">
                             <v-select v-model="customProfileFields.usb_pins" label="USB pins" outlined dense :items="['PA11/PA12']" /></v-col>
@@ -789,11 +789,9 @@
                             <v-col v-if="customProfileFields.architecture === 'stm32'" cols="12" sm="6"><v-select v-model="customProfileFields.bootloader_clock_reference"
                                 label="Katapult clock reference" outlined dense
                                 :items="customProcessor?.clock_references ?? []" /></v-col>
-                            <v-col cols="12" sm="6"><v-select v-model="customProfileFields.bootloader_communication"
-                                label="Katapult communication interface" outlined dense :items="customKatapultCommunications" @change="customKatapultCommunicationChanged" /></v-col>
-                            <v-col v-if="customProfileFields.bootloader_communication === 'canbus'" cols="12" sm="6">
-                                <v-select v-model="customKatapultCanPins" label="Katapult CAN bus interface" outlined dense
-                                    :items="customKatapultCanPinChoices" item-text="label" item-value="value" :disabled="!customProcessor" /></v-col>
+                            <v-col cols="12" sm="6"><v-select v-model="customKatapultCommunicationChoice"
+                                label="Katapult communication interface" outlined dense
+                                :items="customKatapultCommunicationChoices" item-text="label" item-value="value" :disabled="!customProcessor" /></v-col>
                             <v-col v-if="customProfileFields.bootloader_communication === 'usb' && customProfileFields.architecture === 'stm32'" cols="12" sm="6">
                                 <v-select v-model="customProfileFields.bootloader_usb_pins" label="Katapult USB pins" outlined dense :items="['PA11/PA12']" /></v-col>
                         </template>
@@ -1206,10 +1204,62 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
         return this.customCanPinOptions.map((pair) => ({ label: `CAN bus (on ${pair})`, value: pair }))
     }
 
-    get customKatapultCanPinChoices(): Array<{ label: string; value: string }> {
-        return (this.customProcessor?.katapult_can ?? []).map((pair) => ({
-            label: `CAN bus (on ${pair})`, value: pair,
-        }))
+    get customCommunicationChoices(): Array<{ label: string; value: string }> {
+        const options = this.customProcessor
+        if (!options) return []
+        const rp2040 = options.architecture === 'rp2040'
+        return [
+            ...(options.communications.includes('usb') ? [{ label: rp2040 ? 'USB' : 'USB (on PA11/PA12)', value: 'usb' }] : []),
+            ...(options.communications.includes('canbus') ? options.can.map((pair) => ({
+                label: `CAN bus (on ${pair})`, value: `canbus:${pair}`,
+            })) : []),
+            ...(options.communications.includes('usb_to_canbus_bridge') ? [{
+                label: rp2040 ? 'USB to CAN bus bridge' : 'USB to CAN bus bridge (USB on PA11/PA12)',
+                value: 'usb_to_canbus_bridge',
+            }] : []),
+        ]
+    }
+
+    get customCommunicationChoice(): string {
+        return this.customProfileFields.communication === 'canbus'
+            ? (this.customCanPins ? `canbus:${this.customCanPins}` : '')
+            : this.customProfileFields.communication
+    }
+
+    set customCommunicationChoice(value: string) {
+        const pair = value.startsWith('canbus:') ? value.slice('canbus:'.length) : ''
+        const communication = pair ? 'canbus' : value
+        if (this.customProfileFields.communication !== communication) {
+            this.customProfileFields.communication = communication
+            this.customCommunicationChanged()
+        }
+        if (pair) this.customCanPins = pair
+    }
+
+    get customKatapultCommunicationChoices(): Array<{ label: string; value: string }> {
+        const options = this.customProcessor
+        if (!options) return []
+        if (options.architecture === 'rp2040') return [{ label: 'USB', value: 'usb' }]
+        return [
+            { label: 'USB (on PA11/PA12)', value: 'usb' },
+            ...options.katapult_can.map((pair) => ({ label: `CAN bus (on ${pair})`, value: `canbus:${pair}` })),
+        ]
+    }
+
+    get customKatapultCommunicationChoice(): string {
+        return this.customProfileFields.bootloader_communication === 'canbus'
+            ? (this.customKatapultCanPins ? `canbus:${this.customKatapultCanPins}` : '')
+            : this.customProfileFields.bootloader_communication
+    }
+
+    set customKatapultCommunicationChoice(value: string) {
+        const pair = value.startsWith('canbus:') ? value.slice('canbus:'.length) : ''
+        const communication = pair ? 'canbus' : value
+        if (this.customProfileFields.bootloader_communication !== communication) {
+            this.customProfileFields.bootloader_communication = communication
+            this.customKatapultCommunicationChanged()
+        }
+        if (pair) this.customKatapultCanPins = pair
     }
 
     get customBootloaderOffsets(): string[] {
@@ -1237,10 +1287,6 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
         const [rx, tx] = value ? value.split('/') : ['', '']
         this.customProfileFields.bootloader_can_rx_pin = rx
         this.customProfileFields.bootloader_can_tx_pin = tx
-    }
-
-    get customKatapultCommunications(): string[] {
-        return this.customProfileFields.architecture === 'rp2040' ? ['usb'] : ['usb', 'canbus']
     }
 
     get customFlashMethods(): string[] {
