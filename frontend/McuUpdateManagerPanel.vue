@@ -741,6 +741,11 @@
                 <v-card-title>{{ editingCustomProfileId ? 'Edit custom profile' : 'New custom profile' }}</v-card-title>
                 <v-card-text>
                     <v-alert v-if="customProfileError" dense text type="error">{{ customProfileError }}</v-alert>
+                    <v-alert v-if="customHardwareOptionsError" dense text type="error">
+                        Hardware choices could not be loaded: {{ customHardwareOptionsError }}
+                        Update the MCU Update Manager backend and restart Moonraker.
+                        <v-btn small text color="error" :loading="customHardwareOptionsLoading" @click="loadCustomHardwareOptions">Retry</v-btn>
+                    </v-alert>
                     <v-alert dense text type="warning">
                         Verify the exact board revision, pins and bootloader offset before building or flashing.
                         Saving a profile does not flash a device.
@@ -748,7 +753,7 @@
                     <v-autocomplete v-if="!editingCustomProfileId" v-model="customProfileTemplateId"
                         :items="customProfileTemplates" item-text="label" item-value="value"
                         label="Start from an existing profile (optional)" clearable outlined dense
-                        :disabled="customProfileSaving" @change="loadCustomProfileTemplate" />
+                        :disabled="customProfileSaving || customHardwareOptionsLoading || !!customHardwareOptionsError" @change="loadCustomProfileTemplate" />
                     <v-row dense>
                         <v-col cols="12" sm="7"><v-text-field v-model="customProfileFields.name" label="Profile name" outlined dense /></v-col>
                         <v-col cols="12" sm="5"><v-text-field v-model="customProfileFields.vendor" label="Vendor" outlined dense /></v-col>
@@ -800,7 +805,7 @@
                 <v-card-actions>
                     <v-spacer />
                     <v-btn text @click="customProfileDialog = false">Cancel</v-btn>
-                    <v-btn color="primary" :loading="customProfileSaving" @click="saveCustomProfile">Save profile</v-btn>
+                    <v-btn color="primary" :loading="customProfileSaving" :disabled="!customProcessor || !!customHardwareOptionsError" @click="saveCustomProfile">Save profile</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -1160,6 +1165,8 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
     customProfileDialog = false
     customProfileSaving = false
     customProfileError = ''
+    customHardwareOptionsError = ''
+    customHardwareOptionsLoading = false
     customProfileTemplateId = ''
     editingCustomProfileId = ''
     customProfileDeviceId = ''
@@ -1663,16 +1670,28 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
         this.customProfileTemplateId = edit ? '' : profileId
         this.customProfileFields = emptyCustomProfile()
         this.customHardwareOptions = {}
+        await this.loadCustomHardwareOptions()
+    }
+
+    async loadCustomHardwareOptions() {
+        this.customHardwareOptionsLoading = true
+        this.customHardwareOptionsError = ''
         try {
             const options = await this.fetchApi<{ processors: Record<string, CustomProcessorOptions> }>(
                 '/machine/mcu_update_manager/profile/options'
             )
+            if (!options?.processors || !Object.keys(options.processors).length)
+                throw new Error('The backend returned no processor options.')
             this.customHardwareOptions = options.processors
+            const profileId = this.editingCustomProfileId || this.customProfileTemplateId
+            if (profileId && !this.customProfileFields.processor)
+                await this.loadCustomProfileTemplate(profileId)
         } catch (error) {
-            this.customProfileError = this.formatError(error)
-            return
+            this.customHardwareOptions = {}
+            this.customHardwareOptionsError = this.formatError(error)
+        } finally {
+            this.customHardwareOptionsLoading = false
         }
-        if (profileId) await this.loadCustomProfileTemplate(profileId)
     }
 
     async loadCustomProfileTemplate(profileId: string) {
