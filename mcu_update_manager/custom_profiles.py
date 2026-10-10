@@ -11,13 +11,11 @@ import re
 import unicodedata
 
 from .profiles import HardwareProfile, load_profiles, load_simple_yaml
+from .hardware_options import processor_options
 
 
-SUPPORTED_PROCESSORS = {
-    "STM32F072", "STM32F103", "STM32F405", "STM32F407", "STM32F429",
-    "STM32F446", "STM32G0B1", "STM32H723", "STM32H743", "RP2040",
-}
-FLASH_METHODS = {"can_katapult", "usb_katapult_or_make_flash", "klipper_make_flash_usb", "usb_make_flash"}
+SUPPORTED_PROCESSORS = set(processor_options())
+FLASH_METHODS = {"can_katapult", "usb_katapult_or_make_flash", "klipper_make_flash_usb", "usb_make_flash", "pending_verified_profile"}
 FIELDS = {
     "name", "vendor", "family", "chip", "transport", "architecture", "processor",
     "clock_reference", "bootloader_offset", "communication", "can_rx_pin", "can_tx_pin",
@@ -33,6 +31,11 @@ def profile_fields(profile: HardwareProfile) -> dict[str, Any]:
     initial = profile.initial_flash
     transports = profile.match.get("transports", [])
     expected_transport = "can" if build.get("communication") in {"canbus", "usb_to_canbus_bridge"} else "usb"
+    offset = build.get("bootloader_offset", "")
+    if build.get("architecture") == "rp2040" and not offset:
+        offset = "16KiB" if boot else "No bootloader"
+    usb_pins = build.get("usb_pins") or ("PA11/PA12" if build.get("architecture") == "stm32" and build.get("communication") != "canbus" else "")
+    boot_usb_pins = boot.get("usb_pins") or ("PA11/PA12" if boot.get("architecture") == "stm32" and boot.get("communication") == "usb" else "")
     return {
         "name": profile.name,
         "vendor": profile.vendor,
@@ -42,19 +45,19 @@ def profile_fields(profile: HardwareProfile) -> dict[str, Any]:
         "architecture": build.get("architecture", ""),
         "processor": build.get("processor", ""),
         "clock_reference": build.get("clock_reference", ""),
-        "bootloader_offset": build.get("bootloader_offset", ""),
+        "bootloader_offset": offset,
         "communication": build.get("communication", ""),
-        "can_rx_pin": build.get("can_rx_pin", ""),
-        "can_tx_pin": build.get("can_tx_pin", ""),
-        "usb_pins": build.get("usb_pins", ""),
-        "flash_method": profile.flash.get("method", ""),
+        "can_rx_pin": build.get("can_rx_pin") or build.get("can_rx_gpio", ""),
+        "can_tx_pin": build.get("can_tx_pin") or build.get("can_tx_gpio", ""),
+        "usb_pins": usb_pins,
+        "flash_method": profile.flash.get("method") if profile.flash.get("method") in FLASH_METHODS else "pending_verified_profile",
         "use_katapult": bool(boot),
-        "application_start_offset": boot.get("application_start_offset", ""),
+        "application_start_offset": boot.get("application_start_offset") or offset,
         "bootloader_communication": boot.get("communication", ""),
         "bootloader_clock_reference": boot.get("clock_reference", ""),
-        "bootloader_can_rx_pin": boot.get("can_rx_pin", ""),
-        "bootloader_can_tx_pin": boot.get("can_tx_pin", ""),
-        "bootloader_usb_pins": boot.get("usb_pins", ""),
+        "bootloader_can_rx_pin": boot.get("can_rx_pin") or boot.get("can_rx_gpio", ""),
+        "bootloader_can_tx_pin": boot.get("can_tx_pin") or boot.get("can_tx_gpio", ""),
+        "bootloader_usb_pins": boot_usb_pins,
         "initial_flash_method": initial.get("method", ""),
         "dfu_vid_pid": initial.get("dfu_vid_pid", ""),
     }
@@ -107,7 +110,7 @@ def save_custom_profile(
     name = str(merged.get("name", "")).strip()
     if len(name) < 2 or len(name) > 100 or any(ord(char) < 32 for char in name):
         raise ValueError("Profile name must contain 2-100 printable characters.")
-    if len(str(merged.get("vendor", ""))) > 80 or merged.get("family") not in {"mainboard", "toolhead", "expansion", "cartographer", "beacon"}:
+    if len(str(merged.get("vendor", ""))) > 80 or merged.get("family") not in {"mainboard", "toolhead", "expansion", "mmu", "cartographer", "beacon"}:
         raise ValueError("Choose a valid category and keep the vendor name under 80 characters.")
     normalized = unicodedata.normalize("NFKC", name).casefold().strip()
     if any(unicodedata.normalize("NFKC", item.name).casefold().strip() == normalized and item.id != identifier for item in profiles):
@@ -126,15 +129,31 @@ def save_custom_profile(
         raise ValueError("Only STM32/RP2040 USB and CAN profiles are supported by this editor.")
     if processor not in SUPPORTED_PROCESSORS or (architecture == "rp2040") != (processor == "RP2040"):
         raise ValueError(f"Processor is not supported by the automatic config generator: {processor}")
+    options = processor_options()[processor]
+    if chip not in options["chips"]:
+        raise ValueError(f"MCU chip must be one of {', '.join(options['chips'])} for {processor}.")
+    if communication not in options["communications"]:
+        raise ValueError(f"{communication} is not available for {processor}.")
+    if offset not in options["offsets"]:
+        raise ValueError(f"Bootloader offset {offset} is not available for {processor}.")
+    if architecture == "stm32" and merged.get("clock_reference") not in options["clock_references"]:
+        raise ValueError(f"Clock reference is not supported for {processor}.")
+    if architecture == "rp2040" and merged.get("clock_reference"):
+        raise ValueError("RP2040 does not use an STM32 clock reference.")
+    if communication != "usb":
+        pair = f"{merged.get('can_rx_pin')}/{merged.get('can_tx_pin')}"
+        allowed = options["bridge_can"] if communication == "usb_to_canbus_bridge" else options["can"]
+        if pair not in allowed:
+            raise ValueError(f"Unsupported STM32 CAN pin pair for {processor}: {pair}.")
     if communication not in {"usb", "canbus", "usb_to_canbus_bridge"} or method not in FLASH_METHODS:
         raise ValueError("Select a supported communication and flash method.")
     if transport == "usb" and communication != "usb":
         raise ValueError("A USB device must use USB communication. USB-CAN bridges appear as CAN devices.")
     if transport == "can" and communication == "usb":
         raise ValueError("A CAN device must use CAN or USB-CAN bridge communication.")
-    if transport == "usb" and method not in {"klipper_make_flash_usb", "usb_make_flash"}:
+    if transport == "usb" and method not in {"klipper_make_flash_usb", "usb_make_flash", "pending_verified_profile"}:
         raise ValueError("Select a direct USB flash method for a USB device.")
-    if transport == "can" and method not in {"can_katapult", "usb_katapult_or_make_flash"}:
+    if transport == "can" and method not in {"can_katapult", "usb_katapult_or_make_flash", "pending_verified_profile"}:
         raise ValueError("Select a CAN Katapult flash method for a CAN device.")
     if architecture == "stm32" and offset not in {"No bootloader", "8KiB", "16KiB", "32KiB", "64KiB", "128KiB"}:
         raise ValueError("Choose a supported STM32 bootloader offset.")
@@ -146,6 +165,8 @@ def save_custom_profile(
         raise ValueError("The automatic STM32 generator currently supports USB only on PA11/PA12.")
     if merged.get("use_katapult") and offset == "No bootloader":
         raise ValueError("Katapult requires a nonzero Klipper bootloader offset.")
+    if merged.get("use_katapult") and offset not in options["katapult_offsets"]:
+        raise ValueError(f"Katapult application offset {offset} is not available for {processor}.")
     if merged.get("use_katapult") and str(merged.get("application_start_offset", "")) != offset:
         raise ValueError("Katapult application start offset must match the Klipper bootloader offset.")
     boot_comm = str(merged.get("bootloader_communication") or communication)
@@ -155,17 +176,23 @@ def save_custom_profile(
         raise ValueError("Katapult CAN communication requires RX and TX pins.")
     if merged.get("use_katapult") and architecture == "stm32" and not merged.get("bootloader_clock_reference"):
         raise ValueError("Katapult requires a clock reference for STM32.")
+    if merged.get("use_katapult") and architecture == "stm32" and merged.get("bootloader_clock_reference") not in options["clock_references"]:
+        raise ValueError(f"Katapult clock reference is not supported for {processor}.")
+    if merged.get("use_katapult") and boot_comm == "canbus":
+        boot_pair = f"{merged.get('bootloader_can_rx_pin')}/{merged.get('bootloader_can_tx_pin')}"
+        if boot_pair not in options["katapult_can"]:
+            raise ValueError(f"Unsupported Katapult CAN pin pair for {processor}: {boot_pair}.")
     if merged.get("use_katapult") and architecture == "stm32" and boot_comm == "usb" and merged.get("bootloader_usb_pins") != "PA11/PA12":
         raise ValueError("The automatic STM32 generator currently supports Katapult USB only on PA11/PA12.")
     initial_method = str(merged.get("initial_flash_method", ""))
-    if initial_method not in {"dfu_util", "klipper_make_flash_dfu", "rp2040_bootsel_make_flash"}:
+    if initial_method not in {"dfu_util", "klipper_make_flash_dfu", "rp2040_bootsel_make_flash", "sdcard"}:
         raise ValueError("Select a supported initial flash method.")
     if architecture == "stm32" and initial_method == "rp2040_bootsel_make_flash":
         raise ValueError("RP2040 BOOTSEL cannot be used for STM32.")
     if architecture == "rp2040" and initial_method != "rp2040_bootsel_make_flash":
         raise ValueError("RP2040 profiles require BOOTSEL initial flashing.")
     vid_pid = str(merged.get("dfu_vid_pid", ""))
-    if architecture == "stm32" and not re.fullmatch(r"[0-9a-fA-F]{4}:[0-9a-fA-F]{4}", vid_pid):
+    if architecture == "stm32" and initial_method != "sdcard" and not re.fullmatch(r"[0-9a-fA-F]{4}:[0-9a-fA-F]{4}", vid_pid):
         raise ValueError("Enter a DFU VID:PID such as 0483:df11.")
 
     original = load_simple_yaml(base.path) if base else {}
@@ -173,6 +200,10 @@ def save_custom_profile(
         original = next(item for item in original["profiles"] if item["id"] == base.id)
     data = deepcopy(original)
     old_build = dict(data.get("build", {}))
+    if architecture == "stm32" and old_build.get("communication") != "canbus" and not old_build.get("usb_pins"):
+        old_build["usb_pins"] = "PA11/PA12"
+    if architecture == "rp2040" and not old_build.get("bootloader_offset"):
+        old_build["bootloader_offset"] = "16KiB" if data.get("bootloader") else "No bootloader"
     build = dict(old_build)
     for key in ("architecture", "processor", "clock_reference", "bootloader_offset", "communication", "can_rx_pin", "can_tx_pin", "usb_pins"):
         if merged.get(key):
@@ -191,6 +222,9 @@ def save_custom_profile(
         build.pop("kconfig_overrides", None)
         build.pop("gpio_pins_on_startup", None)
         build.pop("mcu_name", None)
+    if architecture == "rp2040":
+        build.pop("can_rx_gpio", None)
+        build.pop("can_tx_gpio", None)
     from .prepare_build import generate_klipper_dot_config
     generate_klipper_dot_config(build)
     data.update({"id": identifier, "name": name, "vendor": str(merged.get("vendor", "Custom")), "family": str(merged.get("family", "toolhead"))})
@@ -218,12 +252,15 @@ def save_custom_profile(
                 boot[key] = merged[field]
             else:
                 boot.pop(key, None)
+        if architecture == "rp2040":
+            boot.pop("can_rx_gpio", None)
+            boot.pop("can_tx_gpio", None)
         data["bootloader"] = boot
         generate_klipper_dot_config(boot)
     else:
         data.pop("bootloader", None)
     initial = {"method": initial_method}
-    if architecture == "stm32":
+    if architecture == "stm32" and initial_method != "sdcard":
         initial["dfu_vid_pid"] = vid_pid.lower()
     data["initial_flash"] = initial
     data.pop("update", None)

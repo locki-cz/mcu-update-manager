@@ -3,6 +3,7 @@ name: BigTreeTech EBB36 Gen2 USB
 vendor: BigTreeTech
 family: toolhead
 source:
+  - https://usb.esoterical.online/hardware_config/STM32/BTT_EBB36_Gen2.html
   - https://usb.esoterical.online/hardware_config/hardware_config.html
   - https://usb.esoterical.online/updating.html
 match:
@@ -20,6 +21,7 @@ build:
   clock_reference: 8MHz crystal
   bootloader_offset: 8KiB
   communication: usb
+  usb_pins: PA11/PA12
   gpio_pins_on_startup: ""
 bootloader:
   firmware: katapult
@@ -29,7 +31,10 @@ bootloader:
   clock_reference: 8MHz crystal
   application_start_offset: 8KiB
   communication: usb
+  usb_pins: PA11/PA12
   support_bootloader_entry: true
+  status_led: true
+  status_led_pin: PA2
 initial_flash:
   method: dfu_util
   bootloader: katapult

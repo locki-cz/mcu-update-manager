@@ -11,6 +11,12 @@ CATALOG = Path(__file__).resolve().parents[1] / "profiles"
 
 
 class ProfilePathsTest(unittest.IsolatedAsyncioTestCase):
+    async def test_profile_options_are_available_without_scanning(self) -> None:
+        component = MCUUpdateManagerComponent.__new__(MCUUpdateManagerComponent)
+        options = await component._handle_profile_options(None)
+        self.assertEqual(options["processors"]["STM32G0B1"]["chip"], "stm32g0b1xx")
+        self.assertNotIn("usb_to_canbus_bridge", options["processors"]["STM32F103"]["communications"])
+
     async def test_profile_detail_resolves_catalog_relative_to_checkout(self) -> None:
         with TemporaryDirectory() as temp:
             component = MCUUpdateManagerComponent.__new__(MCUUpdateManagerComponent)

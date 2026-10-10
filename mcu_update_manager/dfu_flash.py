@@ -21,6 +21,8 @@ def profile_catalog(profile_paths: list[str | Path], custom_profile_dir: str | P
     items = []
     for profile in profiles:
         initial = profile.initial_flash
+        build_ready = automatic_build_ready(profile.build)
+        bootloader_ready = automatic_build_ready(profile.bootloader)
         items.append(
             {
                 "id": profile.id,
@@ -31,9 +33,21 @@ def profile_catalog(profile_paths: list[str | Path], custom_profile_dir: str | P
                 "custom": bool(custom_profile_dir and is_custom_profile(profile, custom_profile_dir)),
                 "chips": profile.match.get("chips", []),
                 "transports": profile.match.get("transports", []),
-                "supports_dfu": bool(initial),
-                "supports_katapult": automatic_build_ready(profile.bootloader),
-                "supports_klipper": automatic_build_ready(profile.build),
+                "supports_dfu": initial.get("method") in {"dfu_util", "klipper_make_flash_dfu", "rp2040_bootsel_make_flash"},
+                "supports_katapult": bootloader_ready,
+                "supports_klipper": build_ready,
+                "verification": {
+                    "ready": build_ready and (not profile.bootloader or bootloader_ready),
+                    "reasons": profile_verification_reasons(profile),
+                },
+                "settings": {
+                    "klipper": profile_settings(profile.build),
+                    "katapult": profile_settings(profile.bootloader),
+                    "initial_flash_method": initial.get("method"),
+                    "update_method": profile.flash.get("method") or profile.update.get("method"),
+                    "sources": profile.source,
+                },
+                "custom_template": profile.build.get("firmware") == "klipper" and bool(profile.build.get("architecture") and profile.build.get("processor")),
                 "initial_flash": {
                     "method": initial.get("method"),
                     "dfu_vid_pid": initial.get("dfu_vid_pid"),
@@ -46,7 +60,43 @@ def profile_catalog(profile_paths: list[str | Path], custom_profile_dir: str | P
     return sorted(items, key=lambda item: (str(item["family"]), str(item["name"])))
 
 
+def profile_settings(config: dict[str, Any]) -> dict[str, Any]:
+    fields = (
+        "architecture", "processor", "clock_reference", "bootloader_offset",
+        "application_start_offset", "communication", "can_rx_pin", "can_tx_pin",
+        "can_rx_gpio", "can_tx_gpio", "usb_pins", "can_bitrate",
+        "gpio_pins_on_startup", "status_led_pin", "support_double_click_reset",
+    )
+    return {key: config[key] for key in fields if config.get(key) is not None}
+
+
+def profile_verification_reasons(profile: HardwareProfile) -> list[str]:
+    reasons = []
+    configs = (("Klipper/Kalico", profile.build), ("Katapult", profile.bootloader))
+    for label, config in configs:
+        if not config:
+            continue
+        if config.get("requires_esoterical_image_extraction"):
+            reasons.append(f"{label}: menuconfig values have not been extracted from the source images")
+        if config.get("requires_manual_menuconfig"):
+            reasons.append(f"{label}: manual menuconfig verification is required")
+        if config.get("requires_exact_profile"):
+            reasons.append(f"{label}: exact board revision must be selected")
+        if config.get("import_config"):
+            reasons.append(f"{label}: a verified configuration must be imported")
+        if not automatic_build_ready(config) and not any(config.get(key) for key in (
+            "requires_esoterical_image_extraction", "requires_manual_menuconfig",
+            "requires_exact_profile", "import_config",
+        )):
+            reasons.append(f"{label}: required build settings are incomplete")
+    if not profile.build:
+        reasons.append("Klipper/Kalico: build settings are not documented")
+    return reasons
+
+
 def firmware_targets(profile: HardwareProfile) -> list[dict[str, str]]:
+    if profile.initial_flash.get("method") not in {"dfu_util", "klipper_make_flash_dfu", "rp2040_bootsel_make_flash"}:
+        return []
     targets: list[dict[str, str]] = []
     if automatic_build_ready(profile.bootloader):
         boot_comm = str(profile.bootloader.get("communication") or "usb")
@@ -92,6 +142,8 @@ def dfu_flash(
         raise ValueError(f"Profile not found: {profile_id}")
 
     profile = profiles[profile_id]
+    if profile.initial_flash.get("method") not in {"dfu_util", "klipper_make_flash_dfu", "rp2040_bootsel_make_flash"}:
+        raise ValueError(f"Profile does not support automatic initial flashing: {profile_id}")
     build_config = target_build_config(profile, firmware_kind, communication, can_bitrate)
     source = source_for_target(firmware_kind, klipper_path, kalico_path, katapult_path)
     build_dir = (Path(build_root).expanduser() / sanitize_path_part(dfu_device_id or "dfu") / "dfu" / sanitize_path_part(profile_id) / firmware_kind / sanitize_path_part(communication)).resolve()
@@ -267,15 +319,16 @@ def generate_katapult_dot_config(build: dict[str, Any]) -> str:
     ]
     lines.extend(line for line in klipper_like.splitlines() if line and not line.startswith("#"))
     app_offsets = {
-        "8KiB": "0x8002000",
-        "16KiB": "0x8004000",
-        "32KiB": "0x8008000",
-        "64KiB": "0x8010000",
-        "128KiB": "0x8020000",
+        "8KiB": "CONFIG_STM32_APP_START_2000=y",
+        "16KiB": "CONFIG_STM32_APP_START_4000=y",
+        "32KiB": "CONFIG_STM32_APP_START_8000=y",
+        "128KiB": "CONFIG_STM32_APP_START_20000=y",
     }
     app_offset = build.get("application_start_offset")
-    if app_offset in app_offsets:
-        lines.append(f"CONFIG_FLASH_APPLICATION_ADDRESS={app_offsets[app_offset]}")
+    if build.get("architecture") == "stm32" and app_offset in app_offsets:
+        lines.append(app_offsets[app_offset])
+    if build.get("architecture") == "stm32" and app_offset not in app_offsets:
+        raise ValueError(f"Unsupported Katapult application offset: {app_offset}")
     if build.get("support_bootloader_entry") or build.get("support_double_click_reset"):
         lines.append("CONFIG_DOUBLE_RESET=y")
     if build.get("status_led") or build.get("status_led_pin"):

@@ -398,6 +398,8 @@ def validate_resolved_config(config_path: Path, build: dict[str, Any]) -> None:
 
     processor_symbols = {
         "STM32F072": "CONFIG_MACH_STM32F072=y",
+        "STM32F103": "CONFIG_MACH_STM32F103=y",
+        "STM32F405": "CONFIG_MACH_STM32F405=y",
         "STM32F407": "CONFIG_MACH_STM32F407=y",
         "STM32F429": "CONFIG_MACH_STM32F429=y",
         "STM32F446": "CONFIG_MACH_STM32F446=y",
@@ -419,7 +421,11 @@ def validate_resolved_config(config_path: Path, build: dict[str, Any]) -> None:
         "No bootloader": "CONFIG_STM32_FLASH_START_0000=y",
     }
     bootloader_offset = build.get("bootloader_offset")
-    if bootloader_offset in offset_symbols:
+    if build.get("processor") == "RP2040" and bootloader_offset == "16KiB":
+        expected.append("CONFIG_RPXXXX_FLASH_START_4000=y")
+    elif build.get("processor") == "RP2040" and bootloader_offset == "No bootloader":
+        expected.append("CONFIG_RPXXXX_FLASH_START_0100=y")
+    elif bootloader_offset in offset_symbols:
         expected.append(offset_symbols[bootloader_offset])
 
     if build.get("clock_reference") == "8MHz crystal":
@@ -455,17 +461,24 @@ def validate_resolved_config(config_path: Path, build: dict[str, Any]) -> None:
                 ]
             )
             forbidden = []
-    elif build.get("communication") == "usb_to_canbus_bridge" and build.get("processor") == "RP2040":
+    elif build.get("communication") in {"canbus", "usb_to_canbus_bridge"} and build.get("processor") == "RP2040":
+        from .prepare_build import rp2040_can_lines
+        expected.extend(rp2040_can_lines(build))
         expected.extend(
             [
-                "CONFIG_USB=y",
-                "CONFIG_USBSERIAL=y",
-                "CONFIG_USBCANBUS=y",
                 "CONFIG_CANBUS=y",
                 "CONFIG_CANBUS_FREQUENCY=" + str(build.get("can_bitrate", "1000000")),
             ]
         )
-        forbidden = []
+        if build.get("communication") == "canbus":
+            expected.extend(["CONFIG_RPXXXX_CANBUS=y", "CONFIG_CANSERIAL=y"])
+            forbidden = ["CONFIG_USBCANBUS=y", "CONFIG_USB=y"]
+        else:
+            expected.extend(["CONFIG_RPXXXX_USBCANBUS=y", "CONFIG_USBCANBUS=y", "CONFIG_USB=y"])
+            forbidden = ["CONFIG_USBSERIAL=y"]
+    elif build.get("communication") == "usb" and build.get("processor") == "RP2040":
+        expected.extend(["CONFIG_RPXXXX_USB=y", "CONFIG_USBSERIAL=y", "CONFIG_USB=y"])
+        forbidden = ["CONFIG_USBCANBUS=y", "CONFIG_CANSERIAL=y"]
     else:
         forbidden = []
 

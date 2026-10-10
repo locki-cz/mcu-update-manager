@@ -140,6 +140,10 @@
                                             : $t('Machine.McuUpdateManagerPanel.NotConfigured')
                                     }}
                                 </v-chip>
+                                <v-chip v-if="!isCartographer(device) && selectedCatalogProfile(device)?.verification?.ready === false"
+                                    x-small label outlined color="warning" class="ml-1 text-uppercase">
+                                    Unverified profile
+                                </v-chip>
                             </div>
                             <div class="text--disabled mt-1">
                                 {{ device.detected_chip || $t('Machine.McuUpdateManagerPanel.UnknownChip') }}
@@ -255,6 +259,33 @@
                                         :label="$t('Machine.McuUpdateManagerPanel.HardwareProfile')"
                                         :disabled="busy || !hardwareProfileOptions(device).length"
                                         @change="setSelectedHardwareProfile(device, $event)" />
+                                    <template v-if="!isCartographer(device) && selectedCatalogProfile(device)">
+                                        <v-alert v-if="selectedCatalogProfile(device)?.verification?.ready === false"
+                                            dense text type="warning" border="left" class="mt-2 mb-0">
+                                            <div class="font-weight-medium">This hardware profile is not verified for automatic firmware builds.</div>
+                                            <div v-for="reason in selectedCatalogProfile(device)?.verification?.reasons ?? []"
+                                                :key="reason" class="mt-1">{{ reason }}</div>
+                                        </v-alert>
+                                        <div class="mcu-update-manager-profile-settings mt-3">
+                                            <div class="subtitle-2 mb-1">Profile settings</div>
+                                            <div class="font-weight-medium mb-1">Klipper / Kalico</div>
+                                            <div v-for="row in profileSettingsRows(selectedCatalogProfile(device)?.settings?.klipper)"
+                                                :key="`klipper-${row.label}`" class="mcu-update-manager-profile-setting">
+                                                <span class="text--secondary">{{ row.label }}</span><span>{{ row.value }}</span>
+                                            </div>
+                                            <div class="font-weight-medium mt-2 mb-1">Katapult</div>
+                                            <div v-for="row in profileSettingsRows(selectedCatalogProfile(device)?.settings?.katapult)"
+                                                :key="`katapult-${row.label}`" class="mcu-update-manager-profile-setting">
+                                                <span class="text--secondary">{{ row.label }}</span><span>{{ row.value }}</span>
+                                            </div>
+                                            <div class="font-weight-medium mt-2 mb-1">Flashing</div>
+                                            <div class="mcu-update-manager-profile-setting"><span class="text--secondary">Initial flash</span><span>{{ selectedCatalogProfile(device)?.settings?.initial_flash_method || 'Not specified' }}</span></div>
+                                            <div class="mcu-update-manager-profile-setting"><span class="text--secondary">Update</span><span>{{ selectedCatalogProfile(device)?.settings?.update_method || 'Not specified' }}</span></div>
+                                            <div v-if="selectedCatalogProfile(device)?.settings?.sources?.length" class="text--secondary mt-2">
+                                                Source: {{ selectedCatalogProfile(device)?.settings?.sources?.[0] }}
+                                            </div>
+                                        </div>
+                                    </template>
                                     <div v-if="canSelectHardwareProfile(device)" class="mt-2">
                                         <v-btn small text color="primary" :disabled="busy || !selectedHardwareProfile(device)"
                                             @click="openCustomProfile(selectedHardwareProfile(device), false, device.id)">
@@ -721,49 +752,48 @@
                     <v-row dense>
                         <v-col cols="12" sm="7"><v-text-field v-model="customProfileFields.name" label="Profile name" outlined dense /></v-col>
                         <v-col cols="12" sm="5"><v-text-field v-model="customProfileFields.vendor" label="Vendor" outlined dense /></v-col>
-                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.family" label="Category" outlined dense
-                            :items="['mainboard', 'toolhead', 'expansion', 'cartographer', 'beacon']" /></v-col>
-                        <v-col cols="12" sm="6"><v-text-field v-model="customProfileFields.chip" label="MCU chip (e.g. stm32g0b1xx)" outlined dense /></v-col>
+                        <v-col cols="12"><v-select v-model="customProfileFields.family" label="Category" outlined dense
+                            :items="['mainboard', 'toolhead', 'expansion', 'mmu', 'cartographer', 'beacon']" /></v-col>
+                        <v-col cols="12" class="subtitle-2">Klipper / Kalico</v-col>
+                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.architecture" label="Micro-controller architecture" outlined dense
+                            :items="['stm32', 'rp2040']" @change="customArchitectureChanged" /></v-col>
+                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.processor" label="Processor model" outlined dense
+                            :items="customProcessorOptions" @change="customProcessorChanged" /></v-col>
+                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.bootloader_offset" label="Bootloader offset" outlined dense
+                            :items="customBootloaderOffsets" @change="customOffsetChanged" /></v-col>
+                        <v-col v-if="customProfileFields.architecture === 'stm32'" cols="12" sm="6"><v-select v-model="customProfileFields.clock_reference" label="Clock reference" outlined dense
+                            :items="customProcessor?.clock_references ?? []" /></v-col>
+                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.communication" label="Communication interface" outlined dense
+                            :items="customProcessor?.communications ?? []" @change="customCommunicationChanged" /></v-col>
+                        <v-col v-if="customProfileFields.communication !== 'usb'" cols="12" sm="6">
+                            <v-select v-model="customCanPins" :label="customProfileFields.communication === 'usb_to_canbus_bridge' ? 'CAN bus interface (RX/TX)' : 'CAN bus pins (RX/TX)'" outlined dense :items="customCanPinOptions" /></v-col>
+                        <v-col v-if="customProfileFields.communication !== 'canbus' && customProfileFields.architecture === 'stm32'" cols="12" sm="6">
+                            <v-select v-model="customProfileFields.usb_pins" label="USB pins" outlined dense :items="['PA11/PA12']" /></v-col>
+                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.chip" label="Detected MCU chip" outlined dense
+                            :items="customProcessor?.chips ?? []" :disabled="!customProcessor" /></v-col>
                         <v-col cols="12" sm="6"><v-select v-model="customProfileFields.transport" label="Detected transport" outlined dense
-                            :items="['can', 'usb']" /></v-col>
-                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.architecture" label="Architecture" outlined dense
-                            :items="['stm32', 'rp2040']" /></v-col>
-                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.processor" label="Processor" outlined dense
-                            :items="customProcessorOptions" /></v-col>
-                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.clock_reference" label="Clock reference" outlined dense
-                            :items="['8MHz crystal', '12MHz crystal', '25MHz crystal', 'Internal clock']" /></v-col>
-                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.bootloader_offset" label="Klipper bootloader offset" outlined dense
-                            :items="['No bootloader', '8KiB', '16KiB', '32KiB', '64KiB', '128KiB']" /></v-col>
-                        <v-col cols="12" sm="6"><v-select v-model="customProfileFields.communication" label="Klipper communication" outlined dense
-                            :items="['usb', 'canbus', 'usb_to_canbus_bridge']" /></v-col>
-                        <v-col v-if="customProfileFields.communication !== 'usb'" cols="12" sm="6">
-                            <v-text-field v-model="customProfileFields.can_rx_pin" label="Klipper CAN RX pin" outlined dense /></v-col>
-                        <v-col v-if="customProfileFields.communication !== 'usb'" cols="12" sm="6">
-                            <v-text-field v-model="customProfileFields.can_tx_pin" label="Klipper CAN TX pin" outlined dense /></v-col>
-                        <v-col v-if="customProfileFields.communication !== 'canbus'" cols="12" sm="6">
-                            <v-text-field v-model="customProfileFields.usb_pins" label="USB pins (e.g. PA11/PA12)" outlined dense /></v-col>
+                            :items="[customProfileFields.communication === 'usb' ? 'usb' : 'can']" disabled /></v-col>
                         <v-col cols="12" sm="6"><v-select v-model="customProfileFields.flash_method" label="Update method" outlined dense
                             :items="customFlashMethods" /></v-col>
                         <v-col cols="12" sm="6"><v-select v-model="customProfileFields.initial_flash_method" label="Initial flash method" outlined dense
-                            :items="['dfu_util', 'klipper_make_flash_dfu', 'rp2040_bootsel_make_flash']" /></v-col>
-                        <v-col v-if="customProfileFields.architecture === 'stm32'" cols="12" sm="6">
-                            <v-text-field v-model="customProfileFields.dfu_vid_pid" label="DFU VID:PID" outlined dense /></v-col>
-                        <v-col cols="12"><v-checkbox v-model="customProfileFields.use_katapult" label="Build Katapult for this board" hide-details /></v-col>
+                            :items="customProfileFields.architecture === 'rp2040' ? ['rp2040_bootsel_make_flash'] : ['dfu_util', 'klipper_make_flash_dfu', 'sdcard']" /></v-col>
+                        <v-col v-if="customProfileFields.architecture === 'stm32' && customProfileFields.initial_flash_method !== 'sdcard'" cols="12" sm="6">
+                            <v-select v-model="customProfileFields.dfu_vid_pid" label="DFU VID:PID" outlined dense :items="['0483:df11']" /></v-col>
+                        <v-col cols="12"><v-checkbox v-model="customProfileFields.use_katapult" label="Build Katapult for this board" hide-details @change="customKatapultChanged" /></v-col>
                         <template v-if="customProfileFields.use_katapult">
+                            <v-col cols="12" class="subtitle-2">Katapult</v-col>
                             <v-col cols="12" sm="6"><v-select v-model="customProfileFields.application_start_offset"
-                                label="Katapult application start offset" outlined dense
-                                :items="['8KiB', '16KiB', '32KiB', '64KiB', '128KiB']" /></v-col>
-                            <v-col cols="12" sm="6"><v-select v-model="customProfileFields.bootloader_communication"
-                                label="Katapult communication" outlined dense :items="['usb', 'canbus']" /></v-col>
-                            <v-col cols="12" sm="6"><v-select v-model="customProfileFields.bootloader_clock_reference"
+                                label="Katapult application start offset" outlined dense disabled
+                                :items="[customProfileFields.bootloader_offset]" /></v-col>
+                            <v-col v-if="customProfileFields.architecture === 'stm32'" cols="12" sm="6"><v-select v-model="customProfileFields.bootloader_clock_reference"
                                 label="Katapult clock reference" outlined dense
-                                :items="['8MHz crystal', '12MHz crystal', '25MHz crystal', 'Internal clock']" /></v-col>
+                                :items="customProcessor?.clock_references ?? []" /></v-col>
+                            <v-col cols="12" sm="6"><v-select v-model="customProfileFields.bootloader_communication"
+                                label="Katapult communication interface" outlined dense :items="customKatapultCommunications" @change="customKatapultCommunicationChanged" /></v-col>
                             <v-col v-if="customProfileFields.bootloader_communication === 'canbus'" cols="12" sm="6">
-                                <v-text-field v-model="customProfileFields.bootloader_can_rx_pin" label="Katapult CAN RX pin" outlined dense /></v-col>
-                            <v-col v-if="customProfileFields.bootloader_communication === 'canbus'" cols="12" sm="6">
-                                <v-text-field v-model="customProfileFields.bootloader_can_tx_pin" label="Katapult CAN TX pin" outlined dense /></v-col>
-                            <v-col v-if="customProfileFields.bootloader_communication === 'usb'" cols="12" sm="6">
-                                <v-text-field v-model="customProfileFields.bootloader_usb_pins" label="Katapult USB pins" outlined dense /></v-col>
+                                <v-select v-model="customKatapultCanPins" label="Katapult CAN RX / TX pins" outlined dense :items="customProcessor?.katapult_can ?? []" /></v-col>
+                            <v-col v-if="customProfileFields.bootloader_communication === 'usb' && customProfileFields.architecture === 'stm32'" cols="12" sm="6">
+                                <v-select v-model="customProfileFields.bootloader_usb_pins" label="Katapult USB pins" outlined dense :items="['PA11/PA12']" /></v-col>
                         </template>
                     </v-row>
                 </v-card-text>
@@ -989,9 +1019,18 @@ interface McuUpdateManagerStatus {
         name?: string
         custom?: boolean
         supports_klipper?: boolean
+        custom_template?: boolean
         chips?: string[]
         transports?: string[]
         supports_dfu?: boolean
+        verification?: { ready: boolean; reasons: string[] }
+        settings?: {
+            klipper?: Record<string, string | number | boolean>
+            katapult?: Record<string, string | number | boolean>
+            initial_flash_method?: string
+            update_method?: string
+            sources?: string[]
+        }
         targets?: Array<{
             communication: string
             kind: 'katapult' | 'klipper'
@@ -1036,6 +1075,19 @@ interface CustomProfileFields {
     bootloader_usb_pins: string
     initial_flash_method: string
     dfu_vid_pid: string
+}
+
+interface CustomProcessorOptions {
+    architecture: string
+    chip: string
+    chips: string[]
+    offsets: string[]
+    katapult_offsets: string[]
+    clock_references: string[]
+    communications: string[]
+    can: string[]
+    katapult_can: string[]
+    bridge_can: string[]
 }
 
 function emptyCustomProfile(): CustomProfileFields {
@@ -1112,6 +1164,7 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
     editingCustomProfileId = ''
     customProfileDeviceId = ''
     customProfileFields: CustomProfileFields = emptyCustomProfile()
+    customHardwareOptions: Record<string, CustomProcessorOptions> = {}
     customProfileTemplateRequestId = 0
     scanPhaseIndex = 0
     scanPhaseTimer: number | null = null
@@ -1127,21 +1180,120 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
     }
 
     get customProfileTemplates(): Array<{ label: string; value: string }> {
-        return (this.status?.profile_catalog ?? []).filter((profile) => profile.supports_klipper).map((profile) => ({
-            label: `${profile.custom ? 'Custom | ' : ''}${profile.name ?? profile.id}`,
+        return (this.status?.profile_catalog ?? []).filter((profile) => profile.custom_template).map((profile) => ({
+            label: `${profile.custom ? 'Custom | ' : ''}${profile.name ?? profile.id}${profile.supports_klipper ? '' : ' (needs hardware settings)'}`,
             value: profile.id,
         }))
     }
 
     get customProcessorOptions(): string[] {
-        return ['STM32F072', 'STM32F103', 'STM32F405', 'STM32F407', 'STM32F429', 'STM32F446',
-            'STM32G0B1', 'STM32H723', 'STM32H743', 'RP2040']
+        return Object.keys(this.customHardwareOptions).filter((name) =>
+            this.customHardwareOptions[name].architecture === this.customProfileFields.architecture)
+    }
+
+    get customProcessor(): CustomProcessorOptions | null {
+        return this.customHardwareOptions[this.customProfileFields.processor] ?? null
+    }
+
+    get customCanPinOptions(): string[] {
+        return this.customProfileFields.communication === 'usb_to_canbus_bridge'
+            ? this.customProcessor?.bridge_can ?? [] : this.customProcessor?.can ?? []
+    }
+
+    get customBootloaderOffsets(): string[] {
+        return this.customProfileFields.use_katapult
+            ? this.customProcessor?.katapult_offsets ?? [] : this.customProcessor?.offsets ?? []
+    }
+
+    get customCanPins(): string {
+        return this.customProfileFields.can_rx_pin && this.customProfileFields.can_tx_pin
+            ? `${this.customProfileFields.can_rx_pin}/${this.customProfileFields.can_tx_pin}` : ''
+    }
+
+    set customCanPins(value: string) {
+        const [rx, tx] = value ? value.split('/') : ['', '']
+        this.customProfileFields.can_rx_pin = rx
+        this.customProfileFields.can_tx_pin = tx
+    }
+
+    get customKatapultCanPins(): string {
+        return this.customProfileFields.bootloader_can_rx_pin && this.customProfileFields.bootloader_can_tx_pin
+            ? `${this.customProfileFields.bootloader_can_rx_pin}/${this.customProfileFields.bootloader_can_tx_pin}` : ''
+    }
+
+    set customKatapultCanPins(value: string) {
+        const [rx, tx] = value ? value.split('/') : ['', '']
+        this.customProfileFields.bootloader_can_rx_pin = rx
+        this.customProfileFields.bootloader_can_tx_pin = tx
+    }
+
+    get customKatapultCommunications(): string[] {
+        return this.customProfileFields.architecture === 'rp2040' ? ['usb'] : ['usb', 'canbus']
     }
 
     get customFlashMethods(): string[] {
         return this.customProfileFields.transport === 'usb'
-            ? ['klipper_make_flash_usb', 'usb_make_flash']
-            : ['can_katapult', 'usb_katapult_or_make_flash']
+            ? ['klipper_make_flash_usb', 'usb_make_flash', 'pending_verified_profile']
+            : ['can_katapult', 'usb_katapult_or_make_flash', 'pending_verified_profile']
+    }
+
+    customArchitectureChanged() {
+        this.customProfileFields.processor = ''
+        this.customProfileFields.chip = ''
+        this.customProfileFields.clock_reference = ''
+        this.customProfileFields.bootloader_clock_reference = ''
+        this.customProfileFields.bootloader_offset = ''
+        this.customProfileFields.communication = 'usb'
+        this.customProfileFields.bootloader_communication = 'usb'
+        this.customProfileFields.usb_pins = this.customProfileFields.architecture === 'stm32' ? 'PA11/PA12' : ''
+        this.customProfileFields.bootloader_usb_pins = this.customProfileFields.usb_pins
+        this.customCommunicationChanged()
+        this.customProfileFields.initial_flash_method = this.customProfileFields.architecture === 'rp2040'
+            ? 'rp2040_bootsel_make_flash' : 'dfu_util'
+    }
+
+    customProcessorChanged() {
+        const options = this.customProcessor
+        if (!options) return
+        this.customProfileFields.chip = options.chip
+        if (!this.customBootloaderOffsets.includes(this.customProfileFields.bootloader_offset))
+            this.customProfileFields.bootloader_offset = this.customBootloaderOffsets[0] ?? ''
+        if (!options.clock_references.includes(this.customProfileFields.clock_reference))
+            this.customProfileFields.clock_reference = options.clock_references[0] ?? ''
+        if (!options.clock_references.includes(this.customProfileFields.bootloader_clock_reference))
+            this.customProfileFields.bootloader_clock_reference = options.clock_references[0] ?? ''
+        if (!options.communications.includes(this.customProfileFields.communication))
+            this.customProfileFields.communication = options.communications[0]
+        if (options.architecture === 'rp2040') this.customProfileFields.bootloader_communication = 'usb'
+        if (!options.katapult_can.includes(this.customKatapultCanPins)) this.customKatapultCanPins = ''
+        this.customCommunicationChanged()
+        this.customOffsetChanged()
+    }
+
+    customCommunicationChanged() {
+        const fields = this.customProfileFields
+        fields.transport = fields.communication === 'usb' ? 'usb' : 'can'
+        fields.flash_method = fields.transport === 'usb' ? 'klipper_make_flash_usb' : 'can_katapult'
+        if (!this.customCanPinOptions.includes(this.customCanPins)) this.customCanPins = ''
+        if (fields.communication !== 'canbus') fields.usb_pins = fields.architecture === 'stm32' ? 'PA11/PA12' : ''
+    }
+
+    customOffsetChanged() {
+        this.customProfileFields.application_start_offset = this.customProfileFields.bootloader_offset
+        if (this.customProfileFields.bootloader_offset === 'No bootloader')
+            this.customProfileFields.use_katapult = false
+    }
+
+    customKatapultChanged() {
+        if (!this.customBootloaderOffsets.includes(this.customProfileFields.bootloader_offset))
+            this.customProfileFields.bootloader_offset = this.customBootloaderOffsets[0] ?? ''
+        this.customOffsetChanged()
+    }
+
+    customKatapultCommunicationChanged() {
+        if (this.customProfileFields.bootloader_communication === 'usb')
+            this.customProfileFields.bootloader_usb_pins = 'PA11/PA12'
+        else if (!this.customProcessor?.katapult_can.includes(this.customKatapultCanPins)) this.customKatapultCanPins = ''
     }
 
     get versionOptions(): FirmwareVersionOption[] {
@@ -1407,9 +1559,29 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
             .filter((profile) => this.isDfuDevice(device) || !device.transport || !profile.transports?.length ||
                 profile.transports.includes(device.transport))
             .map((profile) => ({
-                label: `${profile.custom ? 'Custom | ' : ''}${profile.name ?? profile.id}${scores.get(profile.id) ? ` (${scores.get(profile.id)})` : ''}`,
+                label: `${profile.custom ? 'Custom | ' : ''}${profile.name ?? profile.id}${profile.verification?.ready === false ? ' (unverified)' : ''}${scores.get(profile.id) ? ` (${scores.get(profile.id)})` : ''}`,
                 value: profile.id,
             }))
+    }
+
+    selectedCatalogProfile(device: McuUpdateManagerDevice) {
+        return this.status?.profile_catalog?.find((item) => item.id === this.selectedHardwareProfile(device))
+    }
+
+    profileSettingsRows(config?: Record<string, string | number | boolean>): Array<{ label: string; value: string }> {
+        const fields: Array<[string, string]> = [
+            ['architecture', 'Architecture'], ['processor', 'Processor'],
+            ['clock_reference', 'Clock reference'], ['bootloader_offset', 'Bootloader offset'],
+            ['application_start_offset', 'Application offset'], ['communication', 'Communication'],
+            ['can_rx_pin', 'CAN RX'], ['can_tx_pin', 'CAN TX'],
+            ['can_rx_gpio', 'CAN RX GPIO'], ['can_tx_gpio', 'CAN TX GPIO'],
+            ['usb_pins', 'USB pins'], ['can_bitrate', 'CAN bitrate'],
+            ['gpio_pins_on_startup', 'Startup GPIO'], ['status_led_pin', 'Status LED'],
+            ['support_double_click_reset', 'Double-click reset'],
+        ]
+        if (!config || !Object.keys(config).length) return [{ label: 'Configuration', value: 'Not specified' }]
+        return fields.filter(([key]) => config[key] !== undefined && config[key] !== '')
+            .map(([key, label]) => ({ label, value: String(config[key]) }))
     }
 
     selectedProfileIsCustom(device: McuUpdateManagerDevice): boolean {
@@ -1425,6 +1597,16 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
         this.editingCustomProfileId = edit ? profileId : ''
         this.customProfileTemplateId = edit ? '' : profileId
         this.customProfileFields = emptyCustomProfile()
+        this.customHardwareOptions = {}
+        try {
+            const options = await this.fetchApi<{ processors: Record<string, CustomProcessorOptions> }>(
+                '/machine/mcu_update_manager/profile/options'
+            )
+            this.customHardwareOptions = options.processors
+        } catch (error) {
+            this.customProfileError = this.formatError(error)
+            return
+        }
         if (profileId) await this.loadCustomProfileTemplate(profileId)
     }
 
@@ -2341,6 +2523,18 @@ function busyKey(value: string, deviceId: string, action: string): boolean {
 </script>
 
 <style scoped>
+.mcu-update-manager-profile-settings {
+    max-width: 620px;
+    overflow-wrap: anywhere;
+}
+
+.mcu-update-manager-profile-setting {
+    display: grid;
+    grid-template-columns: minmax(110px, 170px) minmax(0, 1fr);
+    gap: 8px;
+    padding: 2px 0;
+}
+
 .mcu-update-manager-device-id {
     overflow-wrap: anywhere;
 }

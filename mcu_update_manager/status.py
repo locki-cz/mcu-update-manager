@@ -233,7 +233,11 @@ def device_actions(
 ) -> dict[str, Any]:
     has_profile = bool(device.get("confirmed_profile") or (confirmed or {}).get("confirmed_profile"))
     has_uuid_or_serial = bool(device.get("canbus_uuid") or device.get("serial"))
-    katapult_can = device.get("transport") == "can"
+    katapult_can = bool(
+        profile
+        and profile.flash.get("method") == "can_katapult"
+        and device.get("transport") == "can"
+    )
     direct_usb_flash = bool(
         profile
         and profile.flash.get("method") in {"klipper_make_flash_usb", "usb_make_flash"}

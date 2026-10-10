@@ -12,6 +12,7 @@ from urllib.request import urlopen
 
 from .io_utils import atomic_write_json
 from .custom_profiles import get_profile, is_custom_profile, profile_fields, save_custom_profile
+from .hardware_options import processor_options
 from .operation_cache import finish_operation, is_active, mark_interrupted, new_operation, read_operation, write_operation
 from .profiles import load_profiles
 from .status import latest_operation_for_device
@@ -72,6 +73,11 @@ class MCUUpdateManagerComponent:
             "/machine/mcu_update_manager/profile",
             ["GET"],
             self._handle_get_profile,
+        )
+        self.server.register_endpoint(
+            "/machine/mcu_update_manager/profile/options",
+            ["GET"],
+            self._handle_profile_options,
         )
         self.server.register_endpoint(
             "/machine/mcu_update_manager/profile/save",
@@ -206,6 +212,9 @@ class MCUUpdateManagerComponent:
             "custom": is_custom_profile(profile, self.custom_profile_dir),
             "fields": profile_fields(profile),
         }
+
+    async def _handle_profile_options(self, web_request: Any) -> dict[str, Any]:
+        return {"processors": processor_options()}
 
     async def _handle_save_profile(self, web_request: Any) -> dict[str, Any]:
         if (self.active_task and not self.active_task.done()) or is_active(read_operation(self.cache_path)):

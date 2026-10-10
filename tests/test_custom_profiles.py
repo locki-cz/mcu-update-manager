@@ -6,6 +6,7 @@ import hashlib
 import unittest
 
 from mcu_update_manager.custom_profiles import get_profile, profile_fields, save_custom_profile
+from mcu_update_manager.hardware_options import processor_options
 from mcu_update_manager.dfu_flash import profile_catalog
 from mcu_update_manager.flash_plan import check_manifest
 from mcu_update_manager.profiles import load_profiles, load_simple_yaml
@@ -108,6 +109,13 @@ class CustomProfilesTest(unittest.TestCase):
         saved = save_custom_profile(self.paths, self.custom, fields, template_id=original.id)
         self.assertEqual(saved["fields"]["transport"], "can")
 
+    def test_copy_f072_catalog_chip_alias(self) -> None:
+        original = get_profile(load_profiles([CATALOG]), "mellow_fly_d5_can")
+        fields = {**profile_fields(original), "name": "My FLY D5"}
+        saved = save_custom_profile(self.paths, self.custom, fields, template_id=original.id)
+        self.assertEqual(saved["fields"]["chip"], "stm32f072xx")
+        self.assertEqual(processor_options()["STM32F072"]["chip"], "stm32f072xb")
+
     def test_create_profile_without_template(self) -> None:
         fields = self.fields("My new board")
         saved = save_custom_profile(self.paths, self.custom, fields)
@@ -129,6 +137,40 @@ class CustomProfilesTest(unittest.TestCase):
         fields["can_rx_pin"] = "PA0"
         with self.assertRaisesRegex(ValueError, "Unsupported STM32 CAN pin pair"):
             save_custom_profile(self.paths, self.custom, fields, template_id=self.base.id)
+
+    def test_options_match_known_ebb_and_h723(self) -> None:
+        options = processor_options()
+        self.assertEqual(options["STM32G0B1"]["offsets"], ["No bootloader", "8KiB"])
+        self.assertIn("PB12/PB13", options["STM32G0B1"]["can"])
+        self.assertNotIn("PB5/PB6", options["STM32G0B1"]["can"])
+        self.assertIn("PB5/PB6", options["STM32G0B1"]["bridge_can"])
+        self.assertEqual(options["STM32H723"]["offsets"], ["No bootloader", "128KiB"])
+        self.assertEqual(options["RP2040"]["communications"], ["usb", "canbus", "usb_to_canbus_bridge"])
+        self.assertEqual(options["STM32H723"]["katapult_offsets"], ["128KiB"])
+        self.assertNotIn("PB5/PB6", options["STM32H723"]["katapult_can"])
+        self.assertIn("PB5/PB6", options["STM32G0B1"]["katapult_can"])
+
+    def test_reject_wrong_processor_pin_pair_and_offset(self) -> None:
+        for key, value, message in (
+            ("chip", "stm32h723xx", "MCU chip must"),
+            ("can_rx_pin", "PB5", "CAN pin pair"),
+            ("bootloader_offset", "128KiB", "Bootloader offset"),
+            ("clock_reference", "Internal clock", "Clock reference"),
+            ("bootloader_can_tx_pin", "PB6", "Katapult CAN pin pair"),
+        ):
+            with self.subTest(key=key):
+                fields = self.fields(f"Invalid {key}")
+                fields[key] = value
+                with self.assertRaisesRegex(ValueError, message):
+                    save_custom_profile(self.paths, self.custom, fields, template_id=self.base.id)
+
+    def test_reject_bridge_on_stm32f103(self) -> None:
+        fields = self.fields("Invalid F103 bridge")
+        fields.update(processor="STM32F103", chip="stm32f103xx", bootloader_offset="8KiB",
+                      application_start_offset="8KiB", communication="usb_to_canbus_bridge",
+                      can_rx_pin="PB8", can_tx_pin="PB9", usb_pins="PA11/PA12")
+        with self.assertRaisesRegex(ValueError, "not available"):
+            save_custom_profile(self.paths, self.custom, fields)
 
     def test_unicode_name_has_stable_id(self) -> None:
         result = save_custom_profile(self.paths, self.custom, self.fields("Moje \u010desk\u00e1 deska"), template_id=self.base.id)

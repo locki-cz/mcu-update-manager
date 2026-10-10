@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 import json
+import re
 
 from .build_plan import create_build_plan
 from .io_utils import atomic_write_json
@@ -117,7 +118,9 @@ def generate_klipper_dot_config(build: dict[str, Any]) -> str:
     if architecture == "stm32" and bootloader_offset in offset_symbols:
         lines.append(offset_symbols[bootloader_offset])
     if architecture == "rp2040" and bootloader_offset == "16KiB":
-        lines.append("CONFIG_RP2040_FLASH_START_4000=y")
+        lines.append("CONFIG_RPXXXX_FLASH_START_4000=y")
+    if architecture == "rp2040" and bootloader_offset == "No bootloader":
+        lines.append("CONFIG_RPXXXX_FLASH_START_0100=y")
 
     if build.get("clock_reference") == "8MHz crystal":
         lines.append("CONFIG_STM32_CLOCK_REF_8M=y")
@@ -130,25 +133,20 @@ def generate_klipper_dot_config(build: dict[str, Any]) -> str:
         if architecture == "stm32" and build.get("usb_pins") == "PA11/PA12":
             lines.append("CONFIG_STM32_USBCANBUS_PA11_PA12=y")
         if architecture == "rp2040":
-            lines.extend(
-                [
-                    "CONFIG_USB=y",
-                    "CONFIG_USBSERIAL=y",
-                ]
-            )
+            lines.append("CONFIG_RPXXXX_USBCANBUS=y")
     elif communication == "usb":
-        lines.extend(
-            [
-                "CONFIG_USB=y",
-                "CONFIG_USBSERIAL=y",
-            ]
-        )
+        if architecture == "rp2040":
+            lines.append("CONFIG_RPXXXX_USB=y")
+        else:
+            lines.extend(["CONFIG_USB=y", "CONFIG_USBSERIAL=y"])
         if architecture == "stm32" and build.get("usb_pins") == "PA11/PA12":
             lines.append("CONFIG_STM32_USB_PA11_PA12=y")
 
     if communication in {"canbus", "usb_to_canbus_bridge"}:
         if architecture == "rp2040":
             can_lines = rp2040_can_lines(build)
+            if communication == "canbus":
+                lines.append("CONFIG_RPXXXX_CANBUS=y")
         else:
             can_pin_symbol = stm32_can_pin_symbol(
                 build.get("can_rx_pin"),
@@ -188,12 +186,11 @@ def append_unique(lines: list[str], line: str) -> None:
 def rp2040_can_lines(build: dict[str, Any]) -> list[str]:
     rx_gpio = str(build.get("can_rx_gpio") or build.get("can_rx_pin") or "")
     tx_gpio = str(build.get("can_tx_gpio") or build.get("can_tx_pin") or "")
-    if not rx_gpio or not tx_gpio:
-        raise ValueError("Unsupported RP2040 CAN pin pair: missing can_rx_gpio/can_tx_gpio")
+    if not re.fullmatch(r"gpio(?:[0-9]|[12][0-9])", rx_gpio) or not re.fullmatch(r"gpio(?:[0-9]|[12][0-9])", tx_gpio) or rx_gpio == tx_gpio:
+        raise ValueError(f"Unsupported RP2040 CAN pin pair: RX={rx_gpio}, TX={tx_gpio}")
     return [
-        "CONFIG_CANBUS=y",
-        f"CONFIG_CANBUS_GPIO_RX=\"{rx_gpio}\"",
-        f"CONFIG_CANBUS_GPIO_TX=\"{tx_gpio}\"",
+        f"CONFIG_RPXXXX_CANBUS_GPIO_RX={rx_gpio.removeprefix('gpio')}",
+        f"CONFIG_RPXXXX_CANBUS_GPIO_TX={tx_gpio.removeprefix('gpio')}",
     ]
 
 

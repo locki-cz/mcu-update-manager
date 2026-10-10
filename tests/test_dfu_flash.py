@@ -58,6 +58,7 @@ class DfuFlashTest(unittest.TestCase):
                 "can_rx_pin": "PB0",
                 "can_tx_pin": "PB1",
             },
+            initial_flash={"method": "dfu_util", "dfu_vid_pid": "0483:df11"},
         )
 
         targets = firmware_targets(profile)
@@ -81,6 +82,7 @@ class DfuFlashTest(unittest.TestCase):
                 "bootloader_offset": "No bootloader", "communication": "usb",
                 "can_rx_pin": "PD0", "can_tx_pin": "PD1",
             },
+            initial_flash={"method": "dfu_util", "dfu_vid_pid": "0483:df11"},
         )
 
         targets = firmware_targets(profile)
@@ -96,6 +98,17 @@ class DfuFlashTest(unittest.TestCase):
                 },
             ],
         )
+
+    def test_sdcard_profile_has_no_automatic_dfu_target(self):
+        profile = HardwareProfile(
+            id="sdcard", name="SD-card board", family="mainboard",
+            build={"architecture": "stm32", "processor": "STM32F407",
+                   "bootloader_offset": "32KiB", "communication": "canbus"},
+            bootloader={"architecture": "stm32", "processor": "STM32F407",
+                        "application_start_offset": "32KiB", "communication": "usb"},
+            initial_flash={"method": "sdcard"},
+        )
+        self.assertEqual(firmware_targets(profile), [])
 
     def test_direct_usb_update_uses_stable_serial_without_katapult(self):
         manifest = {
