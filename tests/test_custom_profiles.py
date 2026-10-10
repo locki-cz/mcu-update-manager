@@ -10,6 +10,7 @@ from mcu_update_manager.hardware_options import processor_options
 from mcu_update_manager.dfu_flash import profile_catalog
 from mcu_update_manager.flash_plan import check_manifest
 from mcu_update_manager.profiles import load_profiles, load_simple_yaml
+from mcu_update_manager.prepare_build import generate_klipper_dot_config
 
 
 CATALOG = Path(__file__).resolve().parents[1] / "profiles"
@@ -108,6 +109,19 @@ class CustomProfilesTest(unittest.TestCase):
         self.assertEqual(fields["can_rx_pin"], "PD0")
         saved = save_custom_profile(self.paths, self.custom, fields, template_id=original.id)
         self.assertEqual(saved["fields"]["transport"], "can")
+
+    def test_h723_bridge_can_select_another_menuconfig_pin_pair(self) -> None:
+        original = get_profile(load_profiles([CATALOG]), "esoterical_bigtreetech_manta_m8p_v20_usb_can_bridge")
+        fields = {**profile_fields(original), "name": "My Manta alternate CAN"}
+        choices = processor_options()["STM32H723"]["bridge_can"]
+        self.assertIn("PD0/PD1", choices)
+        self.assertIn("PB5/PB6", choices)
+        self.assertNotIn("PA11/PA12", choices)
+        fields.update(can_rx_pin="PB5", can_tx_pin="PB6")
+        saved = save_custom_profile(self.paths, self.custom, fields, template_id=original.id)
+        profile = get_profile(load_profiles(self.paths), saved["id"])
+        self.assertEqual((profile.build["can_rx_pin"], profile.build["can_tx_pin"]), ("PB5", "PB6"))
+        self.assertIn("CONFIG_STM32_CMENU_CANBUS_PB5_PB6=y", generate_klipper_dot_config(profile.build))
 
     def test_copy_f072_catalog_chip_alias(self) -> None:
         original = get_profile(load_profiles([CATALOG]), "mellow_fly_d5_can")

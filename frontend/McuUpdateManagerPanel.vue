@@ -290,7 +290,7 @@
                                         <v-btn small text color="primary" :disabled="busy || !selectedHardwareProfile(device)"
                                             @click="openCustomProfile(selectedHardwareProfile(device), false, device.id)">
                                             <v-icon small left>{{ mdiContentCopy }}</v-icon>
-                                            Copy profile
+                                            Customize profile
                                         </v-btn>
                                         <v-btn v-if="selectedProfileIsCustom(device)" small text color="primary" :disabled="busy"
                                             @click="openCustomProfile(selectedHardwareProfile(device), true, device.id)">
@@ -766,7 +766,8 @@
                         <v-col cols="12" sm="6"><v-select v-model="customProfileFields.communication" label="Communication interface" outlined dense
                             :items="customProcessor?.communications ?? []" @change="customCommunicationChanged" /></v-col>
                         <v-col v-if="customProfileFields.communication !== 'usb'" cols="12" sm="6">
-                            <v-select v-model="customCanPins" :label="customProfileFields.communication === 'usb_to_canbus_bridge' ? 'CAN bus interface (RX/TX)' : 'CAN bus pins (RX/TX)'" outlined dense :items="customCanPinOptions" /></v-col>
+                            <v-select v-model="customCanPins" :label="customProfileFields.communication === 'usb_to_canbus_bridge' ? 'CAN bus interface' : 'Communication interface CAN pins'" outlined dense
+                                :items="customCanPinChoices" item-text="label" item-value="value" :disabled="!customProcessor" /></v-col>
                         <v-col v-if="customProfileFields.communication !== 'canbus' && customProfileFields.architecture === 'stm32'" cols="12" sm="6">
                             <v-select v-model="customProfileFields.usb_pins" label="USB pins" outlined dense :items="['PA11/PA12']" /></v-col>
                         <v-col cols="12" sm="6"><v-select v-model="customProfileFields.chip" label="Detected MCU chip" outlined dense
@@ -791,7 +792,8 @@
                             <v-col cols="12" sm="6"><v-select v-model="customProfileFields.bootloader_communication"
                                 label="Katapult communication interface" outlined dense :items="customKatapultCommunications" @change="customKatapultCommunicationChanged" /></v-col>
                             <v-col v-if="customProfileFields.bootloader_communication === 'canbus'" cols="12" sm="6">
-                                <v-select v-model="customKatapultCanPins" label="Katapult CAN RX / TX pins" outlined dense :items="customProcessor?.katapult_can ?? []" /></v-col>
+                                <v-select v-model="customKatapultCanPins" label="Katapult CAN bus interface" outlined dense
+                                    :items="customKatapultCanPinChoices" item-text="label" item-value="value" :disabled="!customProcessor" /></v-col>
                             <v-col v-if="customProfileFields.bootloader_communication === 'usb' && customProfileFields.architecture === 'stm32'" cols="12" sm="6">
                                 <v-select v-model="customProfileFields.bootloader_usb_pins" label="Katapult USB pins" outlined dense :items="['PA11/PA12']" /></v-col>
                         </template>
@@ -1200,6 +1202,16 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
             ? this.customProcessor?.bridge_can ?? [] : this.customProcessor?.can ?? []
     }
 
+    get customCanPinChoices(): Array<{ label: string; value: string }> {
+        return this.customCanPinOptions.map((pair) => ({ label: `CAN bus (on ${pair})`, value: pair }))
+    }
+
+    get customKatapultCanPinChoices(): Array<{ label: string; value: string }> {
+        return (this.customProcessor?.katapult_can ?? []).map((pair) => ({
+            label: `CAN bus (on ${pair})`, value: pair,
+        }))
+    }
+
     get customBootloaderOffsets(): string[] {
         return this.customProfileFields.use_katapult
             ? this.customProcessor?.katapult_offsets ?? [] : this.customProcessor?.offsets ?? []
@@ -1573,15 +1585,22 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
             ['architecture', 'Architecture'], ['processor', 'Processor'],
             ['clock_reference', 'Clock reference'], ['bootloader_offset', 'Bootloader offset'],
             ['application_start_offset', 'Application offset'], ['communication', 'Communication'],
-            ['can_rx_pin', 'CAN RX'], ['can_tx_pin', 'CAN TX'],
-            ['can_rx_gpio', 'CAN RX GPIO'], ['can_tx_gpio', 'CAN TX GPIO'],
             ['usb_pins', 'USB pins'], ['can_bitrate', 'CAN bitrate'],
             ['gpio_pins_on_startup', 'Startup GPIO'], ['status_led_pin', 'Status LED'],
             ['support_double_click_reset', 'Double-click reset'],
         ]
         if (!config || !Object.keys(config).length) return [{ label: 'Configuration', value: 'Not specified' }]
-        return fields.filter(([key]) => config[key] !== undefined && config[key] !== '')
+        const rows = fields.filter(([key]) => config[key] !== undefined && config[key] !== '')
             .map(([key, label]) => ({ label, value: String(config[key]) }))
+        const rx = config.can_rx_pin ?? config.can_rx_gpio
+        const tx = config.can_tx_pin ?? config.can_tx_gpio
+        if (rx && tx) {
+            const index = rows.findIndex((row) => row.label === 'USB pins')
+            rows.splice(index < 0 ? rows.length : index, 0, {
+                label: 'CAN bus interface (RX/TX)', value: `${rx}/${tx}`,
+            })
+        }
+        return rows
     }
 
     selectedProfileIsCustom(device: McuUpdateManagerDevice): boolean {
