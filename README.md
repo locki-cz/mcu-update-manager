@@ -49,7 +49,7 @@ On the printer, run:
 
 ```bash
 cd ~
-git clone --branch codex/profile-verification https://github.com/locki-cz/mcu-update-manager.git
+git clone https://github.com/locki-cz/mcu-update-manager.git
 cd mcu-update-manager
 bash scripts/install.sh
 ```
@@ -58,7 +58,7 @@ The installer downloads the matching [beta release](https://github.com/locki-cz/
 
 If Katapult is not installed, the panel can still discover devices, but Katapult-based flashing will not be available. Do not confirm a profile until you have verified the exact board and revision.
 
-For an existing `codex/profile-verification` checkout, run `git pull --ff-only` and then `bash scripts/install.sh` to update both the backend and the matching Mainsail panel. The installer makes a fresh backup before replacing the UI. This beta does not automatically merge with newer Mainsail versions.
+For an existing `main` checkout, run `git pull --ff-only` and then `bash scripts/install.sh` to update both the backend and the matching Mainsail panel. The installer makes a fresh backup before replacing the UI. This beta does not automatically merge with newer Mainsail versions.
 
 ## Verify or troubleshoot
 
@@ -76,7 +76,7 @@ The installer prints the backup directory it created. To restore the previous Ma
 
 Profiles are YAML files under [`profiles/`](profiles/README.md), grouped into `mainboard`, `toolhead`, `cartographer`, and `beacon`. The user's confirmed device-to-profile assignments are stored separately in `devices.yaml` on the printer and are not part of this repository. Many catalog entries are discovery-only placeholders; only profiles with complete build and flash settings can be used automatically.
 
-### Custom hardware profiles (custom-profile branch)
+### Custom hardware profiles
 
 Use **Custom hardware profile** in the Machine panel to create a profile from scratch, or expand a device and choose **Copy profile**. A saved custom profile has its own ID and can be edited later. Catalog profiles are read-only. The form checks names against both catalogs without regard to case, and checks the chip, transport, update method, and matching Klipper/Katapult offsets. Saving a profile does not confirm a device, compile, or flash anything.
 
