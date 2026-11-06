@@ -32,6 +32,7 @@ def collect_status(
     artifact_root: str = "artifacts",
     refresh_repositories: bool = False,
     printer_objects_json: str | None = None,
+    configured_only: bool = False,
 ) -> dict[str, Any]:
     profiles = load_profiles(profile_paths or ["profiles"])
     discovery = discover(
@@ -51,6 +52,7 @@ def collect_status(
             firmware_ref=firmware_ref,
             can_bitrate=can_bitrate,
             cartographer_firmware_path=cartographer_firmware_path,
+            configured_only=configured_only,
         ),
         profiles=profiles,
     )
@@ -110,7 +112,7 @@ def collect_status(
         "discovery": discovery.get("discovery", {}),
         "serial_devices": discovery.get("serial_devices", []),
         "can_nodes": discovery.get("can_nodes", []),
-        "profile_catalog": profile_catalog(profile_paths or ["profiles"], custom_profile_dir),
+        "profile_catalog": profile_catalog(profile_paths or ["profiles"], custom_profile_dir, can_bitrate=can_bitrate),
         "summary": status_summary(devices),
         "devices": devices,
     }
@@ -235,7 +237,7 @@ def device_actions(
     has_uuid_or_serial = bool(device.get("canbus_uuid") or device.get("serial"))
     katapult_can = bool(
         profile
-        and profile.flash.get("method") == "can_katapult"
+        and profile.flash.get("method") in {"can_katapult", "usb_katapult_or_make_flash"}
         and device.get("transport") == "can"
     )
     direct_usb_flash = bool(
@@ -517,6 +519,7 @@ def latest_operation_for_device(*, device_id: str, build_root: str) -> dict[str,
         "action": data.get("action"),
         "status": status,
         "error": error,
+        "warning": operation.get("warning"),
         "metadata": str(path),
         "log": log_path,
         "current_step": operation.get("current_step") or data.get("current_step"),
@@ -531,7 +534,7 @@ def latest_operation_for_device(*, device_id: str, build_root: str) -> dict[str,
     return result
 
 
-def read_log_tail(path: Path, max_lines: int = 24) -> str:
+def read_log_tail(path: Path, max_lines: int = 200) -> str:
     try:
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
     except OSError as exc:

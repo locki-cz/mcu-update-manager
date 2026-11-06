@@ -5,7 +5,7 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from mcu_update_manager.custom_profiles import profile_fields, save_custom_profile
-from mcu_update_manager.dfu_flash import generate_katapult_dot_config, profile_catalog
+from mcu_update_manager.dfu_flash import generate_katapult_dot_config, profile_catalog, profile_settings
 from mcu_update_manager.hardware_options import processor_options
 from mcu_update_manager.prepare_build import generate_klipper_dot_config
 from mcu_update_manager.profiles import automatic_build_ready, load_profiles
@@ -16,6 +16,13 @@ CATALOG = Path(__file__).resolve().parents[1] / "profiles"
 
 
 class ProfileCatalogAuditTest(unittest.TestCase):
+    def test_catalog_displays_configured_can_bitrate_without_template(self) -> None:
+        catalog = {item["id"]: item for item in profile_catalog([CATALOG], can_bitrate="500000")}
+        item = catalog["btt_ebb36_gen2_can"]
+        self.assertEqual(item["settings"]["klipper"]["can_bitrate"], "500000")
+        self.assertEqual(profile_settings({"can_bitrate": "{{ can_bitrate }}"})["can_bitrate"], "Unknown")
+        self.assertEqual(profile_settings({"can_bitrate": "250000"}, can_bitrate="500000")["can_bitrate"], "250000")
+
     def test_every_ready_catalog_profile_has_supported_menu_and_copyable_template(self) -> None:
         profiles = load_profiles([CATALOG])
         options = processor_options()

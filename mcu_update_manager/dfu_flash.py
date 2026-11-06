@@ -16,7 +16,7 @@ from .profiles import HardwareProfile, automatic_build_ready, load_profiles
 from .custom_profiles import is_custom_profile
 
 
-def profile_catalog(profile_paths: list[str | Path], custom_profile_dir: str | Path | None = None) -> list[dict[str, Any]]:
+def profile_catalog(profile_paths: list[str | Path], custom_profile_dir: str | Path | None = None, *, can_bitrate: str | None = None) -> list[dict[str, Any]]:
     profiles = load_profiles(profile_paths)
     items = []
     for profile in profiles:
@@ -41,8 +41,8 @@ def profile_catalog(profile_paths: list[str | Path], custom_profile_dir: str | P
                     "reasons": profile_verification_reasons(profile),
                 },
                 "settings": {
-                    "klipper": profile_settings(profile.build),
-                    "katapult": profile_settings(profile.bootloader),
+                    "klipper": profile_settings(profile.build, can_bitrate=can_bitrate),
+                    "katapult": profile_settings(profile.bootloader, can_bitrate=can_bitrate),
                     "initial_flash_method": initial.get("method"),
                     "update_method": profile.flash.get("method") or profile.update.get("method"),
                     "sources": profile.source,
@@ -60,14 +60,18 @@ def profile_catalog(profile_paths: list[str | Path], custom_profile_dir: str | P
     return sorted(items, key=lambda item: (str(item["family"]), str(item["name"])))
 
 
-def profile_settings(config: dict[str, Any]) -> dict[str, Any]:
+def profile_settings(config: dict[str, Any], *, can_bitrate: str | None = None) -> dict[str, Any]:
     fields = (
         "architecture", "processor", "clock_reference", "bootloader_offset",
         "application_start_offset", "communication", "can_rx_pin", "can_tx_pin",
         "can_rx_gpio", "can_tx_gpio", "usb_pins", "can_bitrate",
         "gpio_pins_on_startup", "status_led_pin", "support_double_click_reset",
     )
-    return {key: config[key] for key in fields if config.get(key) is not None}
+    settings = {key: config[key] for key in fields if config.get(key) is not None}
+    if str(settings.get("can_bitrate", "")).strip() == "{{ can_bitrate }}":
+        value = str(can_bitrate or "").strip()
+        settings["can_bitrate"] = value if value.isdigit() and int(value) > 0 else "Unknown"
+    return settings
 
 
 def profile_verification_reasons(profile: HardwareProfile) -> list[str]:

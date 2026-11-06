@@ -212,7 +212,7 @@ def usb_make_flash_steps(manifest: dict[str, Any] | None, flashtool: str, can_in
         {
             "id": "verify_klipper",
             "label": "Verify CAN UUID after reboot",
-            "command": f"python3 {firmware_repo_path(manifest)}/scripts/canbus_query.py {can_interface}",
+            "command": f"python3 {flashtool} -i {can_interface} -q",
             "expect": f"UUID {uuid} should report application Klipper.",
         },
         {
@@ -242,7 +242,7 @@ def usb_make_flash_commands(manifest: dict[str, Any] | None, flashtool: str, can
         f"python3 {flashtool} -i {can_interface} -r -u {uuid}",
         "wait for /dev/serial/by-id/usb-katapult*",
         f"python3 {flashtool} -f {artifact_path} -d <usb-katapult-serial>",
-        f"python3 {firmware_repo_path(manifest)}/scripts/canbus_query.py {can_interface}",
+        f"python3 {flashtool} -i {can_interface} -q",
         "sudo -n systemctl start klipper",
     ]
 

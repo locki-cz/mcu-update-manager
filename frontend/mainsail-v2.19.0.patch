@@ -316,3 +316,35 @@ index fc4d2df3..e5610a2a 100644
          UpdatePanel,
          KlippyStatePanel,
      },
+diff --git a/src/types/moonraker/ServerRPC.ts b/src/types/moonraker/ServerRPC.ts
+index 693bc66b..d6f37809 100644
+--- a/src/types/moonraker/ServerRPC.ts
++++ b/src/types/moonraker/ServerRPC.ts
+@@ -27,4 +27,27 @@ export interface ServerRPC {
+         /** The connection's unique identifier */
+         connection_id: number
+     }>
++
++    /**
++     * Returns connected Moonraker extension agents.
++     */
++    'server.extensions.list': () => Promise<{
++        agents: MoonrakerExtensionAgent[]
++    }>
++
++    /**
++     * Relays a JSON-RPC request to a connected Moonraker extension agent.
++     */
++    'server.extensions.request': (params: {
++        agent: string
++        method: string
++        arguments?: Record<string, unknown> | unknown[] | null
++    }) => Promise<unknown>
++}
++
++export interface MoonrakerExtensionAgent {
++    name: string
++    type: 'agent'
++    url: string
++    version: string
+ }

@@ -4,6 +4,8 @@ Experimental Mainsail panel and Moonraker component for discovering and updating
 
 ![MCU Update Manager panel](docs/mcu-update-manager.png)
 
+Example panel with mixed firmware versions; device status and versions vary by printer.
+
 ## Before you install
 
 - This is a **beta**. Flashing the wrong profile, pins, bootloader offset, or target can make a board inaccessible until you recover it in DFU/BOOTSEL. Check the exact board revision and have a recovery method ready.
@@ -11,6 +13,8 @@ Experimental Mainsail panel and Moonraker component for discovering and updating
 - The installer backs up Mainsail and Moonraker configuration. It does **not** flash firmware, change `printer.cfg`, or restart Klipper. Run it when the printer is idle.
 - Standard paths are assumed: `~/mainsail`, `~/moonraker`, and `~/printer_data/config/moonraker.conf`. Review `scripts/install.sh` if your setup differs.
 - Python 3.11 or newer, `git`, `curl`, and `tar` are needed on the printer host. CAN/USB/DFU flashing additionally needs the relevant tools (such as Katapult and `dfu-util`).
+- Supported current MCU updates use the Aldis Moonraker agent; install and configure it separately. Older firmware without embedded build configuration can use a reviewed, user-confirmed profile. Cartographer firmware is managed separately.
+- Aldis 0.4.0 can fail to detect Katapult when a USB-CAN bridge re-enumerates, leaving Klipper stopped and the bridge in Katapult. A [proposed upstream fix](https://github.com/mjonuschat/aldis/pull/4) was tested on one Manta M8P V2.0; check its status and have a recovery method before updating a bridge.
 
 ## Install on a printer
 
@@ -18,16 +22,16 @@ SSH into the printer, then run:
 
 ```bash
 cd ~
-git clone --branch custom-profile https://github.com/locki-cz/mcu-update-manager.git
+git clone --branch codex/profile-verification https://github.com/locki-cz/mcu-update-manager.git
 cd mcu-update-manager
 bash scripts/install.sh
 ```
 
-The installer downloads the matching [beta release](https://github.com/locki-cz/mcu-update-manager/releases), backs up `~/mainsail`, installs the Moonraker component, adds an include to `moonraker.conf` if needed, restarts Moonraker, and verifies its API. Refresh Mainsail with Ctrl+F5 and open **Machine > MCU Update Manager**. Discovery runs only when you click the scan button.
+The installer downloads the matching [beta release](https://github.com/locki-cz/mcu-update-manager/releases), backs up `~/mainsail`, installs the Moonraker component, adds an include to `moonraker.conf` if needed, restarts Moonraker, and verifies its API. Refresh Mainsail with Ctrl+F5 and open **Machine > MCU Update Manager**. Configured MCUs are loaded automatically; scan for additional USB, DFU and CAN devices with the button in the panel header.
 
 If Katapult is not installed, the panel can still discover devices, but Katapult-based flashing will not be available. Do not confirm a profile until you have verified the exact board and revision.
 
-For an existing `custom-profile` checkout, run `git pull --ff-only` and then `bash scripts/install.sh` to update both the backend and the matching Mainsail panel. The installer makes a fresh backup before replacing the UI. This beta does not automatically merge with newer Mainsail versions.
+For an existing `codex/profile-verification` checkout, run `git pull --ff-only` and then `bash scripts/install.sh` to update both the backend and the matching Mainsail panel. The installer makes a fresh backup before replacing the UI. This beta does not automatically merge with newer Mainsail versions.
 
 ## Verify or troubleshoot
 
@@ -51,7 +55,7 @@ Use **Custom hardware profile** in the Machine panel to create a profile from sc
 
 User profiles are stored under `~/printer_data/config/mcu_update_manager/profiles/`, outside this Git checkout, and survive `git pull`. Set `custom_profile_dir` in `mcu_update_manager.cfg` to use another location. These `.yaml` files contain JSON-formatted YAML so the built-in parser can read them even when PyYAML is unavailable. The branch currently supports only the processor and pin combinations understood by its automatic configuration generator; unsupported hardware still needs a reviewed catalog profile or manual firmware setup.
 
-The `v0.1.0-beta.2` release includes the custom-profile editor for Mainsail v2.19.0. The template list contains Klipper build profiles, not vendor firmware profiles such as Cartographer. Do not deploy or update during a print.
+The `v0.1.0-beta.3` release includes the custom-profile editor for Mainsail v2.19.0. The template list contains Klipper build profiles, not vendor firmware profiles such as Cartographer. Do not deploy or update during a print.
 
 The Moonraker component lives in [`mcu_update_manager/`](mcu_update_manager/) and registers `/machine/mcu_update_manager/*` endpoints. The UI is currently compiled into a Mainsail 2.19.0 build. [`frontend/`](frontend/README.md) contains the panel source and integration patch so the modified frontend can be inspected and rebuilt. This is **not** an official Mainsail plugin and is not affiliated with the Mainsail team.
 

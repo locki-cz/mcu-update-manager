@@ -260,6 +260,9 @@ def firmware_version_options(
             }
         )
 
+    for commit, label in list_recent_revisions(root, upstream or "HEAD"):
+        options.append({"kind": "commit", "value": commit, "label": label, "ref": commit})
+
     options.append(
         {
             "kind": "previous_artifact",
@@ -270,6 +273,20 @@ def firmware_version_options(
         }
     )
     return dedupe_version_options(options)
+
+
+def list_recent_revisions(root: Path, ref: str, limit: int = 30) -> list[tuple[str, str]]:
+    history = run_git(root, ["log", f"--max-count={limit}", "--format=%H", ref])
+    if not history.ok:
+        return []
+    revisions = []
+    for commit in history.stdout.splitlines():
+        commit = commit.strip()
+        if not commit:
+            continue
+        description = run_git(root, ["describe", "--tags", "--always", "--long", commit])
+        revisions.append((commit, description.stdout.strip() if description.ok else commit[:12]))
+    return revisions
 
 
 def list_recent_tags(root: Path, limit: int = 20) -> list[str]:

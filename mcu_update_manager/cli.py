@@ -110,6 +110,7 @@ def main() -> None:
     flash_firmware_parser.add_argument("--katapult-path", default="~/katapult")
     flash_firmware_parser.add_argument("--artifact")
     flash_firmware_parser.add_argument("--artifact-manifest")
+    flash_firmware_parser.add_argument("--moonraker-url", default="http://127.0.0.1:7125")
     flash_firmware_parser.add_argument("--execute", action="store_true")
 
     cartographer_flash_parser = subparsers.add_parser("cartographer-flash", help="Flash Cartographer vendor firmware")
@@ -201,6 +202,7 @@ def main() -> None:
     status_parser.add_argument("--artifact-root", default="artifacts")
     status_parser.add_argument("--refresh-repositories", action="store_true")
     status_parser.add_argument("--printer-objects-json")
+    status_parser.add_argument("--configured-only", action="store_true")
 
     args = parser.parse_args()
     if args.command == "discover":
@@ -311,6 +313,7 @@ def main() -> None:
             artifact=args.artifact,
             artifact_manifest=args.artifact_manifest,
             execute=args.execute,
+            moonraker_url=args.moonraker_url,
         )
         print(json.dumps(result, indent=2, sort_keys=True))
 
@@ -419,6 +422,7 @@ def main() -> None:
             artifact_root=args.artifact_root,
             refresh_repositories=args.refresh_repositories,
             printer_objects_json=args.printer_objects_json,
+            configured_only=args.configured_only,
         )
         print(json.dumps(result, indent=2, sort_keys=True))
 

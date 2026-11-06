@@ -5,6 +5,7 @@
         card-class="machine-mcu-update-manager-panel"
         :collapsible="true">
         <template #buttons>
+            <v-switch v-model="advancedMode" dense hide-details class="mt-0 mr-2" label="Advanced" />
             <v-tooltip top>
                 <template #activator="{ on, attrs }">
                     <v-btn
@@ -33,7 +34,8 @@
                 </v-col>
             </v-row>
 
-            <v-row v-if="status" class="mt-0 mb-0 px-3 pt-3">
+
+            <v-row v-if="status && advancedMode" class="mt-0 mb-0 px-3 pt-3">
                 <v-col cols="12" sm="7" class="py-0">
                     <div class="d-flex align-center">
                         <v-select
@@ -65,7 +67,7 @@
                     </div>
                 </v-col>
                 <v-col cols="12" sm="5" class="py-0 pt-2 pt-sm-0">
-                    <v-alert dense text border="left" class="mb-0" :type="updateAvailable ? 'info' : 'success'">
+                    <v-alert v-if="updateAvailable" dense text border="left" class="mb-0" type="info">
                         {{ firmwareSummary }}
                     </v-alert>
                 </v-col>
@@ -81,7 +83,7 @@
                 </v-col>
             </v-row>
 
-            <v-row v-if="status" class="mt-3 mb-0 px-6 align-center">
+            <v-row v-if="status && advancedMode" class="mt-3 mb-0 px-6 align-center">
                 <v-col cols="12" md="8" class="pa-0 d-flex flex-wrap align-center">
                     <v-chip
                         v-for="item in scanSummary"
@@ -98,21 +100,22 @@
                     {{ lastScanText }}
                 </v-col>
             </v-row>
-            <div v-if="status" class="px-6 pb-2">
+            <div v-if="status && advancedMode" class="px-6 pb-2">
                 <v-btn small outlined color="primary" :disabled="busy" @click="openCustomProfile()">
                     <v-icon small left>{{ mdiPlus }}</v-icon>
                     Custom hardware profile
                 </v-btn>
             </div>
+            <div v-if="status && aldisMessage" class="px-6 pb-2 text--secondary">{{ aldisMessage }}</div>
 
             <template v-if="devices.length">
                 <template v-for="(device, index) in devices">
-                    <v-divider v-if="index || status" :key="`divider-${device.id}`" class="mt-3 mb-0" />
+                    <v-divider v-if="index || (status && advancedMode)" :key="`divider-${device.id}`" class="mt-3 mb-0" />
                     <v-row :key="device.id" class="py-2">
                         <v-col class="pl-6 pr-3">
                             <div class="d-flex align-center flex-wrap">
                                 <strong>{{ device.name || device.mcu_section || device.id }}</strong>
-                                <v-chip
+                                <v-chip v-if="advancedMode"
                                     x-small
                                     label
                                     outlined
@@ -120,7 +123,7 @@
                                     :color="transportColor(device.transport)">
                                     {{ device.transport || 'unknown' }}
                                 </v-chip>
-                                <v-chip
+                                <v-chip v-if="advancedMode"
                                     x-small
                                     label
                                     outlined
@@ -128,7 +131,7 @@
                                     :color="device.confirmation_status === 'confirmed' ? 'green' : 'orange'">
                                     {{ confirmationLabel(device) }}
                                 </v-chip>
-                                <v-chip
+                                <v-chip v-if="advancedMode"
                                     x-small
                                     label
                                     outlined
@@ -140,21 +143,31 @@
                                             : $t('Machine.McuUpdateManagerPanel.NotConfigured')
                                     }}
                                 </v-chip>
-                                <v-chip v-if="!isCartographer(device) && selectedCatalogProfile(device)?.verification?.ready === false"
+                                <v-chip v-if="advancedMode && !isCartographer(device) && selectedCatalogProfile(device)?.verification?.ready === false"
                                     x-small label outlined color="warning" class="ml-1 text-uppercase">
                                     Unverified profile
                                 </v-chip>
                             </div>
-                            <div class="text--disabled mt-1">
+                            <div v-if="advancedMode" class="text--disabled mt-1">
                                 {{ device.detected_chip || $t('Machine.McuUpdateManagerPanel.UnknownChip') }}
                                 <template v-if="deviceProfileName(device)">
                                     &middot; {{ deviceProfileName(device) }}
                                 </template>
                             </div>
-                            <div class="text--disabled">
+                            <div v-if="advancedMode" class="text--disabled">
                                 {{ device.firmware_version || $t('Machine.McuUpdateManagerPanel.UnknownVersion') }}
                             </div>
-                            <div class="text--disabled mcu-update-manager-device-id">
+                            <div v-if="!advancedMode" class="text--secondary mt-1">{{ basicHardwareName(device) }} · {{ basicVersionText(device) }}</div>
+                            <div v-if="device.config_source && !device.runtime_app" class="warning--text caption">Configured · connection not verified</div>
+                            <div v-if="!advancedMode && !aldisDevice(device)" class="text--secondary">Open Advanced for device options.</div>
+                            <div v-if="aldisDevice(device) && (advancedMode || aldisDevice(device)?.state !== 'current')" class="text--secondary">
+                                Aldis: {{ aldisDevice(device)?.message || aldisDevice(device)?.state }}
+                            </div>
+                            <div v-if="busyAction === `${device.id}:legacy_update`" class="text--secondary mt-1">
+                                {{ legacyUpdatePhase || 'Checking device' }}
+                                <v-progress-linear indeterminate color="primary" height="3" />
+                            </div>
+                            <div v-if="advancedMode" class="text--disabled mcu-update-manager-device-id">
                                 {{
                                     device.canbus_uuid ||
                                     device.serial ||
@@ -163,7 +176,7 @@
                                 }}
                             </div>
                             <v-expand-transition>
-                                <div v-show="isDeviceExpanded(device)" class="mt-2">
+                                <div v-show="advancedMode && isDeviceExpanded(device)" class="mt-2">
                                     <v-alert
                                         v-if="device.last_operation && device.last_operation.status === 'failed'"
                                         dense
@@ -623,7 +636,14 @@
                             </v-expand-transition>
                         </v-col>
                         <v-col class="col-auto pr-6 text-right" align-self="center">
-                            <v-tooltip top>
+                            <v-chip v-if="aldisCanUpdate(device) || canUpdateLegacy(device)" small label outlined color="primary"
+                                class="minwidth-0 px-2 text-uppercase" :disabled="busy || aldisRunning || printerIsPrinting"
+                                @click="aldisCanUpdate(device) ? updateWithAldis(device) : updateLegacy(device)">
+                                <v-icon small class="mr-1">{{ mdiProgressUpload }}</v-icon>{{ $t('Machine.UpdatePanel.Update') }}
+                            </v-chip>
+                            <v-chip v-else-if="aldisDevice(device)?.state === 'current'" small label outlined color="success"
+                                class="minwidth-0 px-2 text-uppercase"><v-icon small class="mr-1">{{ mdiCheck }}</v-icon>{{ $t('Machine.UpdatePanel.UpToDate') }}</v-chip>
+                            <v-tooltip v-if="advancedMode" top>
                                 <template #activator="{ on, attrs }">
                                     <v-btn
                                         icon
@@ -636,7 +656,7 @@
                                 </template>
                                 <span>{{ $t('Machine.McuUpdateManagerPanel.Details') }}</span>
                             </v-tooltip>
-                            <div v-if="isDeviceExpanded(device)" class="mcu-update-manager-action-buttons">
+                            <div v-if="advancedMode && isDeviceExpanded(device)" class="mcu-update-manager-action-buttons">
                                 <v-tooltip v-if="device.actions?.needs_confirmation" top>
                                     <template #activator="{ on, attrs }">
                                         <v-btn
@@ -724,18 +744,85 @@
 
             <v-row v-else class="mt-0 mb-0">
                 <v-col class="px-6">
-                    <div v-if="!loaded" class="d-flex justify-center py-3">
-                        <v-btn color="primary" :loading="loading" :disabled="printerIsPrinting" @click="refresh(true)">
-                            <v-icon left>{{ mdiRadar }}</v-icon>
-                            {{ $t('Machine.McuUpdateManagerPanel.CheckDevices') }}
-                        </v-btn>
-                    </div>
-                    <p v-else class="text-center text--disabled mb-0">
+                    <p v-if="loaded" class="text-center text--disabled mb-0">
                         {{ $t('Machine.McuUpdateManagerPanel.NoDevices') }}
                     </p>
                 </v-col>
             </v-row>
+            <div v-if="status && devices.length" class="px-6 py-3 text-center">
+                <v-btn color="primary" text small :disabled="busy || aldisRunning || printerIsPrinting || !aldisUpdateCandidates.length"
+                    @click="openUpdateAllDialog"><v-icon left>{{ mdiProgressUpload }}</v-icon>Update all MCU</v-btn>
+                <div v-if="!aldisUpdateCandidates.length" class="text--secondary caption mt-1">
+                    No MCU devices are currently eligible for Aldis bulk update. Legacy firmware and vendor-managed devices require individual updates.
+                </div>
+                <div v-else-if="aldisUpdateCandidates.length < devices.length" class="text--secondary caption mt-1">
+                    Only devices eligible for Aldis updates are included; other devices require individual updates.
+                </div>
+            </div>
         </v-card-text>
+        <v-dialog v-model="confirmationDialog" persistent max-width="600">
+            <panel title="Are you sure?" :icon="mdiProgressQuestion" :margin-bottom="false">
+                <v-card-text class="pt-4">
+                    <v-alert dense text type="warning" style="white-space: pre-wrap">{{ confirmationMessage }}</v-alert>
+                    <v-checkbox v-model="confirmationUnderstood" label="I understand the risks" hide-details />
+                </v-card-text>
+                <v-divider />
+                <v-card-actions><v-spacer /><v-btn text @click="resolveConfirmation(false)">Abort</v-btn><v-btn text color="primary" :disabled="!confirmationUnderstood" @click="resolveConfirmation(true)">Continue</v-btn></v-card-actions>
+            </panel>
+        </v-dialog>
+        <v-dialog v-model="operationDialog" persistent max-width="800" scrollable>
+            <panel :title="operationDialogRunning ? 'Updating firmware' : 'Firmware update finished'" :icon="mdiProgressUpload" :margin-bottom="false">
+                <v-card-text>
+                    <div class="mb-2">{{ operationDialogDevice }} · {{ operationDialogPhase }}</div>
+                    <v-progress-linear v-if="operationDialogRunning" indeterminate color="primary" class="mb-3" />
+                    <v-alert v-if="operationDialogError" dense text type="error">{{ operationDialogError }}</v-alert>
+                    <v-alert v-if="operationDialogWarning" dense text type="warning">{{ operationDialogWarning }}</v-alert>
+                    <pre ref="operationLog" class="mcu-update-manager-log-tail" style="white-space: pre-wrap; overflow: auto; max-height: 48vh" @scroll="onOperationLogScroll">{{ operationDialogText || 'Waiting for output...' }}</pre>
+                </v-card-text>
+                <v-divider />
+                <v-card-actions><v-spacer /><v-btn text @click="operationDialog = false">{{ operationDialogRunning ? 'Hide' : 'Close' }}</v-btn></v-card-actions>
+            </panel>
+        </v-dialog>
+        <v-dialog v-model="singleUpdateDialog" persistent max-width="600" scrollable>
+            <panel :title="$t('Machine.UpdatePanel.AreYouSure')" :icon="mdiProgressQuestion" :margin-bottom="false" card-class="machine-update-hint-dialog">
+                <template #buttons><v-btn icon tile @click="singleUpdateDialog = false"><v-icon>{{ mdiCloseThick }}</v-icon></v-btn></template>
+                <v-card-text>
+                    <v-alert dense text border="left" type="warning" class="mt-2">
+                        Firmware will be built and flashed for <strong>{{ singleUpdateDeviceName }}</strong>.
+                        Klipper will stop during the update.
+                        <div class="mt-2">Target: {{ singleUpdateTarget }}</div>
+                        <template v-if="singleUpdateProfileName">
+                            <div class="mt-2">Profile: {{ singleUpdateProfileName }}</div>
+                            <div v-for="row in singleUpdateSettings" :key="row.label">{{ row.label }}: {{ row.value }}</div>
+                        </template>
+                    </v-alert>
+                    <v-checkbox v-model="singleUpdateConfirmed" :label="$t('Machine.UpdatePanel.IUnderstandTheRisks')" hide-details />
+                </v-card-text>
+                <v-divider />
+                <v-card-actions><v-spacer /><v-btn text @click="singleUpdateDialog = false">{{ $t('Machine.UpdatePanel.Abort') }}</v-btn>
+                    <v-btn text color="primary" :disabled="!singleUpdateConfirmed || busy || aldisRunning || printerIsPrinting" @click="confirmSingleUpdate">{{ $t('Machine.UpdatePanel.StartUpdate') }}</v-btn>
+                </v-card-actions>
+            </panel>
+        </v-dialog>
+        <v-dialog v-model="updateAllDialog" persistent max-width="600">
+            <panel title="Update all MCU?" :icon="mdiProgressQuestion" :margin-bottom="false" card-class="machine-update-hint-dialog">
+                <template #buttons><v-btn icon tile @click="updateAllDialog = false"><v-icon>{{ mdiCloseThick }}</v-icon></v-btn></template>
+                <v-card-text>
+                    <v-alert dense text border="left" type="warning">
+                        The following MCU devices will be updated to the running host version. Klipper will be stopped during the update.
+                    </v-alert>
+                    <div v-for="name in pendingUpdateNames" :key="name" class="py-1">{{ name }}</div>
+                    <div v-if="pendingUpdateNames.length < devices.length" class="text--secondary mt-2">
+                        Other devices, including unsupported and vendor-managed devices, are not included.
+                    </div>
+                    <v-checkbox v-model="updateAllConfirmed" :label="$t('Machine.UpdatePanel.IUnderstandTheRisks')" hide-details />
+                </v-card-text>
+                <v-divider />
+                <v-card-actions><v-spacer /><v-btn text @click="updateAllDialog = false">{{ $t('Machine.UpdatePanel.Abort') }}</v-btn>
+                    <v-btn text color="primary" :disabled="!updateAllConfirmed || busy || aldisRunning || printerIsPrinting" @click="updateAllWithAldis">{{ $t('Machine.UpdatePanel.StartUpdate') }}</v-btn>
+                </v-card-actions>
+            </panel>
+        </v-dialog>
         <v-dialog v-model="customProfileDialog" max-width="760" scrollable>
             <v-card>
                 <v-card-title>{{ editingCustomProfileId ? 'Edit custom profile' : 'New custom profile' }}</v-card-title>
@@ -813,11 +900,16 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins } from 'vue-property-decorator'
+import Vue from 'vue'
+import { Component, Mixins, Watch } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import Panel from '@/components/ui/Panel.vue'
 import { isRecord } from '@/plugins/helpers'
 import {
+    mdiCheck,
+    mdiCloseThick,
+    mdiProgressUpload,
+    mdiProgressQuestion,
     mdiAlertCircleOutline,
     mdiCheckCircle,
     mdiCheckboxBlankCircleOutline,
@@ -892,6 +984,7 @@ interface McuUpdateManagerOperation {
     current_step?: string
     detected_serial?: string
     error?: string
+    warning?: string
     log?: string
     log_tail?: string
     metadata?: string
@@ -926,6 +1019,7 @@ interface McuUpdateManagerDevice {
     canbus_uuid?: string
     confirmation_status?: string
     confirmed_profile?: string
+    confirmed_by_user?: boolean
     config_source?: {
         file?: string
         line?: number
@@ -942,6 +1036,7 @@ interface McuUpdateManagerDevice {
         status?: string
     }
     firmware_version?: string
+    runtime_app?: string | null
     id: string
     last_operation?: McuUpdateManagerOperation | null
     likely_profiles?: McuUpdateManagerProfileMatch[]
@@ -1107,11 +1202,13 @@ function emptyCustomProfile(): CustomProfileFields {
 }
 
 interface McuUpdateManagerCachedJob {
+    phase?: string
     action?: string
     completed_at?: string | null
     device_id?: string | null
     error?: string | null
     job_id?: string
+    started_at?: string
     result?: Record<string, unknown> | null
     status?: string
 }
@@ -1126,6 +1223,10 @@ interface McuUpdateManagerOperationStatus {
     components: { Panel },
 })
 export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
+    mdiCheck = mdiCheck
+    mdiCloseThick = mdiCloseThick
+    mdiProgressUpload = mdiProgressUpload
+    mdiProgressQuestion = mdiProgressQuestion
     mdiAlertCircleOutline = mdiAlertCircleOutline
     mdiCheckCircle = mdiCheckCircle
     mdiCheckboxBlankCircleOutline = mdiCheckboxBlankCircleOutline
@@ -1148,6 +1249,36 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
     mdiUsb = mdiUsb
 
     busy = false
+    operationDialog = false
+    operationDialogRunning = false
+    operationDialogDevice = ''
+    operationDialogPhase = ''
+    operationDialogError = ''
+    operationDialogWarning = ''
+    operationDialogBuildLog = ''
+    operationDialogFlashLog = ''
+    operationDialogKind = ''
+    operationDialogJobId = ''
+    operationLogFollow = true
+    confirmationDialog = false
+    confirmationMessage = ''
+    confirmationUnderstood = false
+    confirmationResolver: ((confirmed: boolean) => void) | null = null
+    legacyUpdatePhase = ''
+    advancedMode = false
+    updateAllDialog = false
+    singleUpdateDialog = false
+    singleUpdateConfirmed = false
+    singleUpdateDeviceId = ''
+    singleUpdateDeviceName = ''
+    singleUpdateProfileId = ''
+    singleUpdateProfileName = ''
+    singleUpdateSettings: Array<{ label: string; value: string }> = []
+    singleUpdateTarget = ''
+    singleUpdateKind: 'legacy' | 'aldis' = 'legacy'
+    updateAllConfirmed = false
+    pendingUpdateNames: string[] = []
+    aldisHostVersion = ''
     busyAction = ''
     errorMessage = ''
     loaded = false
@@ -1163,6 +1294,12 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
     selectedHardwareProfileIds: Record<string, string> = {}
     selectedArtifactRefs: Record<string, string> = {}
     customProfileDialog = false
+    aldisMessage = ''
+    aldisMcus: Array<{ name: string; state: string; message?: string; actions?: string[] }> = []
+    aldisRunning = false
+    aldisBlocker = ''
+    aldisRunMessages: string[] = []
+    aldisTimer: number | null = null
     customProfileSaving = false
     customProfileError = ''
     customHardwareOptionsError = ''
@@ -1177,13 +1314,68 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
     scanPhaseTimer: number | null = null
     status: McuUpdateManagerStatus | null = null
 
+    mounted() {
+        void this.refresh()
+    }
+
     beforeDestroy() {
+        this.resolveConfirmation(false)
         this.stopProgressRefresh()
         this.stopScanProgress()
+        if (this.aldisTimer !== null) window.clearTimeout(this.aldisTimer)
     }
 
     get devices(): McuUpdateManagerDevice[] {
         return this.status?.devices ?? []
+    }
+
+    confirmAction(message: string): Promise<boolean> {
+        if (this.confirmationResolver) return Promise.resolve(false)
+        this.confirmationMessage = message
+        this.confirmationUnderstood = false
+        this.confirmationDialog = true
+        return new Promise((resolve) => { this.confirmationResolver = resolve })
+    }
+
+    resolveConfirmation(confirmed: boolean) {
+        const resolve = this.confirmationResolver
+        this.confirmationResolver = null
+        this.confirmationDialog = false
+        if (resolve) resolve(confirmed)
+    }
+
+    get operationDialogText(): string {
+        if (this.operationDialogKind === 'aldis') return this.aldisRunMessages.join('\n')
+        return [this.operationDialogBuildLog && `Build log:\n${this.operationDialogBuildLog}`,
+            this.operationDialogFlashLog && `Flash log:\n${this.operationDialogFlashLog}`].filter(Boolean).join('\n\n')
+    }
+
+    @Watch('operationDialogText')
+    onOperationLogChanged() {
+        if (!this.operationLogFollow || !this.operationDialog) return
+        this.$nextTick(() => {
+            const log = this.$refs.operationLog as HTMLElement | undefined
+            if (log && this.operationLogFollow) log.scrollTop = log.scrollHeight
+        })
+    }
+
+    onOperationLogScroll(event: Event) {
+        const log = event.target as HTMLElement
+        this.operationLogFollow = log.scrollHeight - log.scrollTop - log.clientHeight < 32
+    }
+
+    openOperationDialog(device: string, kind: string) {
+        this.operationDialogDevice = device
+        this.operationDialogKind = kind
+        this.operationDialogPhase = 'Preparing'
+        this.operationDialogError = ''
+        this.operationDialogWarning = ''
+        this.operationDialogBuildLog = ''
+        this.operationDialogFlashLog = ''
+        this.operationDialogJobId = ''
+        this.operationLogFollow = true
+        this.operationDialogRunning = true
+        this.operationDialog = true
     }
 
     get customProfileTemplates(): Array<{ label: string; value: string }> {
@@ -1514,7 +1706,7 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
     async flashSelectedArtifact(device: McuUpdateManagerDevice) {
         const firmwareRef = this.selectedArtifactRef(device)
         if (!firmwareRef) return
-        if (!window.confirm(this.flashConfirmationText(device, firmwareRef))) return
+        if (!(await this.confirmAction(this.flashConfirmationText(device, firmwareRef)))) return
         await this.runRequest('flash', device, { firmware_ref: firmwareRef })
     }
 
@@ -1638,13 +1830,13 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
             ['architecture', 'Architecture'], ['processor', 'Processor'],
             ['clock_reference', 'Clock reference'], ['bootloader_offset', 'Bootloader offset'],
             ['application_start_offset', 'Application offset'], ['communication', 'Communication'],
-            ['usb_pins', 'USB pins'], ['can_bitrate', 'CAN bitrate'],
+            ['usb_pins', 'USB pins'], ['can_bitrate', 'CAN bitrate (build setting)'],
             ['gpio_pins_on_startup', 'Startup GPIO'], ['status_led_pin', 'Status LED'],
             ['support_double_click_reset', 'Double-click reset'],
         ]
         if (!config || !Object.keys(config).length) return [{ label: 'Configuration', value: 'Not specified' }]
         const rows = fields.filter(([key]) => config[key] !== undefined && config[key] !== '')
-            .map(([key, label]) => ({ label, value: String(config[key]) }))
+            .map(([key, label]) => ({ label, value: key === 'can_bitrate' && String(config[key]).includes('{{') ? 'Unknown' : String(config[key]) }))
         const rx = config.can_rx_pin ?? config.can_rx_gpio
         const tx = config.can_tx_pin ?? config.can_tx_gpio
         if (rx && tx) {
@@ -1800,7 +1992,7 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
     async flashDfu(device: McuUpdateManagerDevice) {
         const target = this.selectedDfuTarget(device)
         if (!target || !device.confirmed_profile) return
-        const confirmed = window.confirm(
+        const confirmed = await this.confirmAction(
             this.$t('Machine.McuUpdateManagerPanel.DfuFlashQuestion', {
                 target: this.dfuTargetOptions(device).find(
                     (item) => item.value === `${target.kind}:${target.communication}`
@@ -2198,12 +2390,12 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
             return
         }
 
-        if (!window.confirm(this.flashConfirmationText(device))) return
+        if (!(await this.confirmAction(this.flashConfirmationText(device)))) return
         await this.runDeviceAction('flash', device)
     }
 
     async updateCartographerUsbFirmware(device: McuUpdateManagerDevice) {
-        const confirmed = window.confirm(
+        const confirmed = await this.confirmAction(
             this.$t('Machine.McuUpdateManagerPanel.CartographerUsbUpdateQuestion', {
                 version: this.selectedCartographerVersion(device),
             }).toString()
@@ -2217,7 +2409,7 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
     }
 
     async switchCartographerUsbToCan(device: McuUpdateManagerDevice) {
-        const confirmed = window.confirm(
+        const confirmed = await this.confirmAction(
             this.$t('Machine.McuUpdateManagerPanel.CartographerUsbToCanQuestion').toString()
         )
         if (!confirmed) return
@@ -2229,7 +2421,7 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
     }
 
     async flashCartographerUsbToCanFirmware(device: McuUpdateManagerDevice) {
-        const confirmed = window.confirm(
+        const confirmed = await this.confirmAction(
             this.$t('Machine.McuUpdateManagerPanel.CartographerFlashCanAfterReconnectQuestion', {
                 uuid: device.canbus_uuid,
                 version: this.selectedCartographerVersion(device),
@@ -2259,7 +2451,7 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
 
     async flashCartographerCanToUsb(device: McuUpdateManagerDevice) {
         const version = this.cartographerCanToUsbVersion(device)
-        const confirmed = window.confirm(
+        const confirmed = await this.confirmAction(
             this.$t('Machine.McuUpdateManagerPanel.CartographerCanToUsbQuestion', {
                 version,
                 uuid: device.canbus_uuid,
@@ -2276,7 +2468,7 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
 
     async flashCartographerDfu(device: McuUpdateManagerDevice, targetProtocol: 'USB' | 'CAN') {
         const version = this.cartographerDfuVersion(device, targetProtocol)
-        const confirmed = window.confirm(
+        const confirmed = await this.confirmAction(
             this.$t('Machine.McuUpdateManagerPanel.CartographerDfuQuestion', {
                 target: targetProtocol,
                 version,
@@ -2304,9 +2496,10 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
         this.startScanProgress()
 
         try {
-            const path = '/machine/mcu_update_manager/status' + (checkUpdates ? '?refresh_repositories=true' : '')
+            const path = '/machine/mcu_update_manager/status' + (checkUpdates ? '?refresh_repositories=true' : '?configured_only=true')
             const status = await this.fetchApi<McuUpdateManagerStatus>(path)
             this.status = status
+            await this.refreshAldisStatus()
             this.errorMessage = ''
             this.selectedFirmwareRef = status.firmware_source?.ref ?? this.selectedFirmwareRef
             this.syncSelectedCartographerVersions()
@@ -2319,6 +2512,179 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
             this.loaded = true
             this.refreshPromise = null
             this.stopScanProgress()
+        }
+    }
+
+    async refreshAldisStatus() {
+        try {
+            const extensions = await Vue.$socket.emitAndWait('server.extensions.list')
+            if (!extensions.agents.some((agent) => agent.name === 'aldis')) {
+                this.aldisMessage = 'Aldis agent is not connected.'
+                this.aldisBlocker = this.aldisMessage
+                if (this.aldisRunning) this.aldisTimer = window.setTimeout(() => this.refreshAldisStatus(), 5000)
+                return
+            }
+            const result = await Vue.$socket.emitAndWait('server.extensions.request', {
+                agent: 'aldis', method: 'status', arguments: null,
+            }) as { api_version?: number; host?: { software_version?: string }; mcus?: Array<{ name: string; state: string; message?: string; actions?: string[] }>; blocker?: { message?: string } | null; run?: { state?: string; messages?: Array<{ message?: string; mcu?: string | null }>; result?: { outcome?: string } | null } | null }
+            if (result.api_version !== 1 || !Array.isArray(result.mcus)) {
+                this.aldisMessage = 'Aldis returned an unsupported API version or invalid status.'
+                this.aldisBlocker = this.aldisMessage
+                return
+            }
+            const reportedMcus = result.mcus.filter((mcu) => mcu && typeof mcu.name === 'string' && typeof mcu.state === 'string')
+            if (reportedMcus.length || result.run?.state !== 'running') this.aldisMcus = reportedMcus
+            this.aldisHostVersion = result.host?.software_version || ''
+            this.aldisBlocker = result.blocker?.message || ''
+            this.aldisRunning = result.run?.state === 'running'
+            this.aldisRunMessages = (result.run?.messages || []).map((item) => `${item.mcu ? `${item.mcu}: ` : ''}${item.message || ''}`)
+            if (this.aldisRunning && this.operationDialogKind !== 'aldis') this.openOperationDialog('Aldis', 'aldis')
+            if (this.operationDialogKind === 'aldis' && result.run) {
+                this.operationDialogRunning = this.aldisRunning
+                this.operationDialogPhase = this.aldisRunning ? 'Updating' : 'Finished'
+                if (result.run.result?.outcome === 'failed') this.operationDialogError = 'Aldis reported a failed update. See the log.'
+            }
+            this.aldisMessage = this.aldisBlocker
+            if (this.aldisTimer !== null) window.clearTimeout(this.aldisTimer)
+            this.aldisTimer = this.aldisRunning ? window.setTimeout(() => this.refreshAldisStatus(), 2000) : null
+        } catch (error) {
+            this.aldisMessage = `Aldis status unavailable: ${this.formatError(error)}`
+            this.aldisBlocker = this.aldisMessage
+            if (this.aldisRunning) this.aldisTimer = window.setTimeout(() => this.refreshAldisStatus(), 5000)
+        }
+    }
+
+    aldisDevice(device: McuUpdateManagerDevice) {
+        const normalize = (value: string) => value.trim().toLowerCase().replace(/^mcu\s+/, '')
+        const name = normalize(String(device.name || device.id))
+        return this.aldisMcus.find((mcu) => normalize(mcu.name) === name)
+    }
+
+    aldisCanUpdate(device: McuUpdateManagerDevice): boolean {
+        const mcu = this.aldisDevice(device)
+        return (!this.advancedMode || this.selectedFirmwareRef === 'current') && !this.aldisBlocker && mcu?.state === 'update_available' && Array.isArray(mcu.actions) && mcu.actions.includes('update')
+    }
+
+    canUpdateLegacy(device: McuUpdateManagerDevice): boolean {
+        return this.aldisDevice(device)?.state === 'unsupported_legacy' && device.confirmed_by_user === true &&
+            !!device.actions?.can_build && !!device.actions?.can_flash && !device.actions?.vendor_managed
+    }
+
+    async updateLegacy(device: McuUpdateManagerDevice) {
+        if (this.busy || this.aldisRunning || this.printerIsPrinting || !this.canUpdateLegacy(device)) return
+        const profile = this.status?.profile_catalog?.find((item) => item.id === device.confirmed_profile)
+        if (!profile) return
+        this.singleUpdateKind = 'legacy'
+        this.singleUpdateDeviceId = device.id
+        this.singleUpdateDeviceName = device.name || device.id
+        this.singleUpdateProfileId = device.confirmed_profile || ''
+        this.singleUpdateProfileName = profile.name || this.singleUpdateProfileId
+        this.singleUpdateSettings = this.profileSettingsRows(profile.settings?.klipper)
+        this.singleUpdateTarget = this.aldisHostVersion || 'current host version'
+        this.singleUpdateConfirmed = false
+        this.singleUpdateDialog = true
+    }
+
+    basicHardwareName(device: McuUpdateManagerDevice): string {
+        return this.selectedCatalogProfile(device)?.name || this.deviceProfileName(device) || device.detected_chip || 'Unknown hardware'
+    }
+
+    basicVersionText(device: McuUpdateManagerDevice): string {
+        const current = device.firmware_version || 'Unknown version'
+        const mcu = this.aldisDevice(device)
+        if ((mcu?.state === 'update_available' || this.canUpdateLegacy(device)) && this.aldisHostVersion && current !== this.aldisHostVersion) return `${current} → ${this.aldisHostVersion}`
+        return current
+    }
+
+    get aldisUpdateCandidates(): McuUpdateManagerDevice[] {
+        return this.devices.filter((device) => this.aldisCanUpdate(device))
+    }
+
+    openUpdateAllDialog() {
+        if (this.busy || this.aldisRunning || this.printerIsPrinting || !this.aldisUpdateCandidates.length) return
+        this.pendingUpdateNames = [...new Set(this.aldisUpdateCandidates.map((device) => this.aldisDevice(device)?.name).filter((name): name is string => !!name))]
+        this.updateAllConfirmed = false
+        this.updateAllDialog = this.pendingUpdateNames.length > 0
+    }
+
+    async updateAllWithAldis() {
+        if (!this.updateAllDialog || !this.updateAllConfirmed || this.busy || this.aldisRunning || this.printerIsPrinting) return
+        const allowed = new Set(this.aldisUpdateCandidates.map((device) => this.aldisDevice(device)?.name))
+        const names = this.pendingUpdateNames.slice()
+        if (!names.length || names.some((name) => !allowed.has(name))) {
+            this.updateAllDialog = false
+            this.aldisMessage = 'Device eligibility changed. Check devices again before updating.'
+            return
+        }
+        this.updateAllDialog = false
+        this.aldisRunning = true
+        this.aldisRunMessages = []
+        this.openOperationDialog(names.join(', '), 'aldis')
+        try {
+            await Vue.$socket.emitAndWait('server.extensions.request', {
+                agent: 'aldis', method: 'update', arguments: { mcus: names },
+            })
+            await this.refreshAldisStatus()
+        } catch (error) {
+            this.aldisRunning = false
+            this.aldisMessage = `Aldis update failed: ${this.formatError(error)}`
+            this.operationDialogRunning = false
+            this.operationDialogError = this.aldisMessage
+        }
+    }
+
+    async updateWithAldis(device: McuUpdateManagerDevice) {
+        if (this.busy || this.aldisRunning || this.printerIsPrinting || !this.aldisCanUpdate(device)) return
+        const mcu = this.aldisDevice(device)
+        if (!mcu) return
+        this.singleUpdateKind = 'aldis'
+        this.singleUpdateDeviceId = device.id
+        this.singleUpdateDeviceName = mcu.name
+        this.singleUpdateProfileId = ''
+        this.singleUpdateProfileName = ''
+        this.singleUpdateSettings = []
+        this.singleUpdateTarget = this.aldisHostVersion || 'current host version'
+        this.singleUpdateConfirmed = false
+        this.singleUpdateDialog = true
+    }
+
+    async confirmSingleUpdate() {
+        if (!this.singleUpdateDialog || !this.singleUpdateConfirmed || this.busy || this.aldisRunning || this.printerIsPrinting) return
+        const device = this.devices.find((item) => item.id === this.singleUpdateDeviceId)
+        if (!device || (this.singleUpdateKind === 'legacy' && (!this.canUpdateLegacy(device) || device.confirmed_profile !== this.singleUpdateProfileId)) ||
+            (this.singleUpdateKind === 'aldis' && !this.aldisCanUpdate(device)) ||
+            (this.aldisHostVersion || 'current host version') !== this.singleUpdateTarget) {
+            this.singleUpdateDialog = false
+            this.errorMessage = 'Device or update settings changed. Check devices again before updating.'
+            return
+        }
+        if (this.singleUpdateKind === 'legacy') {
+            const profile = this.status?.profile_catalog?.find((item) => item.id === this.singleUpdateProfileId)
+            if (!profile || JSON.stringify(this.profileSettingsRows(profile.settings?.klipper)) !== JSON.stringify(this.singleUpdateSettings)) {
+                this.singleUpdateDialog = false
+                this.errorMessage = 'Profile settings changed. Review the update again.'
+                return
+            }
+            this.singleUpdateDialog = false
+            await this.runRequest('update_legacy', device)
+            return
+        }
+        const mcu = this.aldisDevice(device)
+        if (!mcu || mcu.name !== this.singleUpdateDeviceName) return
+        this.singleUpdateDialog = false
+        this.aldisRunning = true
+        this.aldisRunMessages = []
+        this.openOperationDialog(mcu.name, 'aldis')
+        try {
+            await Vue.$socket.emitAndWait('server.extensions.request', {
+                agent: 'aldis', method: 'update', arguments: { mcus: [mcu.name] },
+            })
+            await this.refreshAldisStatus()
+        } catch (error) {
+            this.aldisRunning = false
+            this.aldisMessage = `Aldis update failed: ${this.formatError(error)}`
+            this.operationDialogRunning = false
+            this.operationDialogError = this.aldisMessage
         }
     }
 
@@ -2345,7 +2711,7 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
     async switchFirmwareRef() {
         const option = this.versionOptions.find((item) => item.value === this.selectedFirmwareRef)
         const label = option?.label ?? this.selectedFirmwareRef
-        const confirmed = window.confirm(
+        const confirmed = await this.confirmAction(
             this.$t('Machine.McuUpdateManagerPanel.SwitchFirmwareVersionQuestion', { version: label }).toString()
         )
         if (!confirmed) return
@@ -2398,6 +2764,7 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
             | 'confirm'
             | 'build'
             | 'flash'
+            | 'update_legacy'
             | 'verify'
             | 'cartographer_flash'
             | 'cartographer_usb_to_can'
@@ -2407,6 +2774,8 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
         extra: Record<string, unknown> = {}
     ) {
         let backgroundJobStarted = false
+        const showDialog = ['build', 'flash', 'update_legacy', 'dfu_flash', 'cartographer_flash', 'cartographer_dfu_flash', 'cartographer_usb_to_can'].includes(action)
+        if (showDialog) this.openOperationDialog(device.name || device.id, 'manager')
         this.busy = true
         this.busyAction = `${device.id}:${action}`
         this.errorMessage = ''
@@ -2427,6 +2796,7 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
             })
             if (result.job_id) {
                 backgroundJobStarted = true
+                if (showDialog) this.operationDialogJobId = result.job_id
                 this.startProgressRefresh()
                 this.$toast.info(
                     this.$t('Machine.McuUpdateManagerPanel.ActionStarted', {
@@ -2463,8 +2833,10 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
             const message = this.formatError(error)
             await this.refresh()
             this.errorMessage = message
+            if (showDialog) this.operationDialogError = message
         } finally {
             if (!backgroundJobStarted) {
+                if (showDialog) this.operationDialogRunning = false
                 this.busy = false
                 this.busyAction = ''
                 this.stopProgressRefresh()
@@ -2498,6 +2870,23 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
             const job = snapshot.job
             const active = ['queued', 'running'].includes(job?.status ?? '')
 
+            if (job && ['legacy_update', 'build', 'flash', 'dfu_flash', 'cartographer_flash', 'cartographer_dfu_flash', 'cartographer_usb_to_can'].includes(job.action || '') && (active || this.operationDialogJobId === job.job_id)) {
+                if (active && this.operationDialogJobId !== job.job_id) {
+                    this.openOperationDialog(job.device_id || 'MCU', 'manager')
+                    this.operationDialogJobId = job.job_id || ''
+                }
+                this.operationDialogRunning = active
+                this.operationDialogPhase = job.phase || job.status || 'Preparing'
+                this.operationDialogError = job.error || ''
+                const op = snapshot.operation
+                const isCurrent = !!op?.started_at && !!job.started_at && Date.parse(op.started_at) >= Date.parse(job.started_at)
+                if (isCurrent && op?.log_tail) {
+                    if (op.action === 'build_firmware') this.operationDialogBuildLog = op.log_tail
+                    else this.operationDialogFlashLog = op.log_tail
+                }
+                if (isCurrent && op?.warning) this.operationDialogWarning = op.warning
+            }
+
             if (job?.device_id && snapshot.operation) {
                 const device = this.devices.find((item) => item.id === job.device_id)
                 if (device) this.$set(device, 'last_operation', snapshot.operation)
@@ -2506,6 +2895,8 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
             if (active && job) {
                 this.busy = true
                 this.busyAction = this.cachedBusyAction(job)
+                const phases: Record<string, string> = { checking: 'Checking device', building: 'Compiling firmware', flashing: 'Flashing and verifying' }
+                this.legacyUpdatePhase = job.action === 'legacy_update' ? (phases[job.phase || ''] || 'Preparing update') : ''
                 return
             }
 
@@ -2546,7 +2937,7 @@ export default class McuUpdateManagerPanel extends Mixins(BaseMixin) {
 
     actionKey(action: string) {
         if (action === 'build') return 'Build'
-        if (action === 'flash' || action === 'cartographer_flash') return 'Flash'
+        if (action === 'flash' || action === 'cartographer_flash' || action === 'update_legacy') return 'Flash'
         if (action === 'cartographer_usb_to_can') return 'CartographerUsbToCan'
         if (action === 'cartographer_dfu_flash') return 'CartographerDfuFlash'
         if (action === 'dfu_flash') return 'DfuFlash'

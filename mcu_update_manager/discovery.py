@@ -39,6 +39,7 @@ class DiscoverOptions:
     firmware_ref: str = "current"
     can_bitrate: str = "1000000"
     cartographer_firmware_path: str | None = "~/cartographer_firmware"
+    configured_only: bool = False
 
 
 def discover(options: DiscoverOptions, profiles: list[HardwareProfile]) -> dict[str, Any]:
@@ -57,7 +58,7 @@ def discover(options: DiscoverOptions, profiles: list[HardwareProfile]) -> dict[
         if runtime_warning:
             warnings.append(runtime_warning)
 
-    serial_devices = scan_serial_by_id(options.serial_dir)
+    serial_devices = [] if options.configured_only else scan_serial_by_id(options.serial_dir)
     confirmed_devices = devices_by_id(load_devices(options.devices_path))
     katapult_status = check_katapult(options.katapult_path)
     firmware_sources = inspect_firmware_sources(
@@ -65,7 +66,7 @@ def discover(options: DiscoverOptions, profiles: list[HardwareProfile]) -> dict[
         kalico_path=options.kalico_path,
         refresh=options.refresh_repositories,
     )
-    can_nodes = load_can_nodes(options.can_interface, options.can_query_output, options.katapult_path)
+    can_nodes = [] if options.configured_only else load_can_nodes(options.can_interface, options.can_query_output, options.katapult_path)
     can_scan_note = can_scan_status_note(mcu_sections, can_nodes)
 
     devices = []
@@ -81,6 +82,9 @@ def discover(options: DiscoverOptions, profiles: list[HardwareProfile]) -> dict[
         runtime = printer_objects.get(section.name, printer_objects.get(mcu_name, {}))
         chip = runtime.get("mcu_constants", {}).get("MCU")
         firmware_version = runtime.get("mcu_version")
+        runtime_kconfig = runtime.get("mcu_kconfig")
+        if not isinstance(runtime_kconfig, str):
+            runtime_kconfig = None
         referenced_pins = find_referenced_pins(parsed_config.sections, mcu_name)
 
         device = {
@@ -93,6 +97,7 @@ def discover(options: DiscoverOptions, profiles: list[HardwareProfile]) -> dict[
             "can_interface": options.can_interface if canbus_uuid else None,
             "detected_chip": chip,
             "firmware_version": firmware_version,
+            "mcu_kconfig": runtime_kconfig,
             "referenced_pins": referenced_pins,
             "runtime_app": runtime.get("app", "Klipper") if runtime else None,
             "config_source": {"file": section.source, "line": section.line},
@@ -119,7 +124,8 @@ def discover(options: DiscoverOptions, profiles: list[HardwareProfile]) -> dict[
             device["vendor_firmware"] = cartographer
         devices.append(device)
 
-    devices.extend(
+    if not options.configured_only:
+        devices.extend(
         discover_usb_cartographers(
             serial_devices=serial_devices,
             used_serials=used_serials,
@@ -128,8 +134,8 @@ def discover(options: DiscoverOptions, profiles: list[HardwareProfile]) -> dict[
             cartographer_firmware_path=options.cartographer_firmware_path,
             can_bitrate=options.can_bitrate,
         )
-    )
-    devices.extend(
+        )
+        devices.extend(
         discover_unconfigured_cartographer_can_candidates(
             can_nodes=can_nodes,
             configured_devices=devices,
@@ -139,15 +145,15 @@ def discover(options: DiscoverOptions, profiles: list[HardwareProfile]) -> dict[
             can_bitrate=options.can_bitrate,
             can_interface=options.can_interface,
         )
-    )
-    devices.extend(
+        )
+        devices.extend(
         discover_dfu_candidates(
             profiles=profiles,
             confirmed_devices=confirmed_devices,
             cartographer_firmware_path=options.cartographer_firmware_path,
             can_bitrate=options.can_bitrate,
         )
-    )
+        )
 
     return {
         "project": "MCU Update Manager",
@@ -159,12 +165,13 @@ def discover(options: DiscoverOptions, profiles: list[HardwareProfile]) -> dict[
             "repositories": firmware_sources,
         },
         "discovery": {
-            "scanned_at": datetime.now(timezone.utc).isoformat(),
+            "scanned_at": None if options.configured_only else datetime.now(timezone.utc).isoformat(),
+            "configured_only": options.configured_only,
             "phases": [
                 {"id": "printer_cfg", "status": "done"},
-                {"id": "usb", "status": "done"},
-                {"id": "dfu", "status": "done"},
-                {"id": "can", "status": "done"},
+                {"id": "usb", "status": "skipped" if options.configured_only else "done"},
+                {"id": "dfu", "status": "skipped" if options.configured_only else "done"},
+                {"id": "can", "status": "skipped" if options.configured_only else "done"},
                 {"id": "runtime", "status": "done"},
             ],
             "printer_cfg": str(Path(options.printer_cfg).expanduser()),

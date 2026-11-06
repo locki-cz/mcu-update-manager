@@ -1,7 +1,10 @@
 import unittest
+from io import BytesIO
+from pathlib import Path
+from unittest.mock import patch
 
 from mcu_update_manager.dfu_flash import benign_stm32_leave_error as benign_dfu_leave_error, firmware_targets
-from mcu_update_manager.flash_firmware import benign_stm32_leave_error as benign_update_leave_error, validate_preflight
+from mcu_update_manager.flash_firmware import benign_stm32_leave_error as benign_update_leave_error, validate_preflight, verify_usb_runtime
 from mcu_update_manager.flash_plan import direct_usb_flash_steps
 from mcu_update_manager.profiles import HardwareProfile
 
@@ -36,6 +39,38 @@ class DfuFlashTest(unittest.TestCase):
                 "dfu-util: Error during download get_status",
             )
         )
+
+    def test_flash_usb_leave_error_requires_complete_ordered_download(self):
+        command = ["python3", "/home/pi/klipper/scripts/flash_usb.py", "-t", "stm32h723", "-d", "/dev/test", "-s", "0x8000000", "firmware.bin"]
+        output = "File downloaded successfully\nSubmitting leave request...\ndfu-util: Error during download get_status\n"
+        self.assertTrue(benign_update_leave_error(command, output))
+        self.assertFalse(benign_update_leave_error(command, "dfu-util: Error during download get_status"))
+        self.assertFalse(benign_update_leave_error(command, "Submitting leave request\nFile downloaded successfully\ndfu-util: Error during download get_status"))
+        self.assertFalse(benign_update_leave_error(["python3", "/tmp/other.py", *command[2:]], output))
+
+    def test_leave_error_requires_matching_running_mcu_version_and_chip(self):
+        result = {"device": {"mcu_section": "mcu ouroboros", "detected_chip": "stm32h723xx"},
+                  "flash": {"steps": [{"id": "verify_runtime", "status": "pending"}]}}
+        manifest = {"firmware_source": {"current_version": "v1"}}
+        payload = b'{"result":{"status":{"mcu ouroboros":{"mcu_version":"v1","mcu_constants":{"MCU":"stm32h723xx"}}}}}'
+        with patch("mcu_update_manager.flash_firmware.urlopen", return_value=BytesIO(payload)), patch(
+            "mcu_update_manager.flash_firmware.write_result"
+        ), patch("mcu_update_manager.flash_firmware.append_log"):
+            verify_usb_runtime(result, Path("result.json"), Path("flash.log"), "http://localhost:7125", manifest)
+        self.assertEqual(result["flash"]["steps"][0]["status"], "done")
+
+    def test_leave_error_does_not_accept_wrong_running_version(self):
+        result = {"device": {"mcu_section": "mcu ouroboros", "detected_chip": "stm32h723xx"},
+                  "flash": {"steps": [{"id": "verify_runtime", "status": "pending"}]}}
+        payload = b'{"result":{"status":{"mcu ouroboros":{"mcu_version":"old","mcu_constants":{"MCU":"stm32h723xx"}}}}}'
+        with patch("mcu_update_manager.flash_firmware.urlopen", return_value=BytesIO(payload)), patch(
+            "mcu_update_manager.flash_firmware.write_result"
+        ), patch("mcu_update_manager.flash_firmware.time.sleep"), patch(
+            "mcu_update_manager.flash_firmware.time.monotonic", side_effect=[0, 0, 50]
+        ):
+            with self.assertRaisesRegex(RuntimeError, "could not be verified"):
+                verify_usb_runtime(result, Path("result.json"), Path("flash.log"), "http://localhost:7125", {"firmware_source": {"current_version": "v1"}})
+        self.assertEqual(result["flash"]["steps"][0]["status"], "failed")
 
     def test_profile_with_bootloader_only_offers_katapult_for_initial_dfu_flash(self):
         profile = HardwareProfile(

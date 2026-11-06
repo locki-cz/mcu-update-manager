@@ -1,6 +1,7 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import subprocess
+import json
 import unittest
 from unittest import mock
 
@@ -9,8 +10,8 @@ from mcu_update_manager.build_firmware import build_firmware, create_artifact_ma
 from mcu_update_manager.devices import confirm_device
 from mcu_update_manager.discovery import DiscoverOptions, discover, discover_dfu_candidates, scan_usb_dfu_devices
 from mcu_update_manager.dfu_flash import generate_katapult_dot_config
-from mcu_update_manager.flash_firmware import flash_firmware, require_query_application, validate_preflight
-from mcu_update_manager.flash_plan import create_flash_plan
+from mcu_update_manager.flash_firmware import flash_firmware, require_query_application, run_verify_application_step, validate_preflight
+from mcu_update_manager.flash_plan import create_flash_plan, usb_make_flash_steps
 from mcu_update_manager.firmware_source import dedupe_version_options, detect_project
 from mcu_update_manager.prepare_build import generate_klipper_dot_config, prepare_build_workspace
 from mcu_update_manager.profiles import HardwareProfile, load_profiles
@@ -28,6 +29,52 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class DiscoveryTest(unittest.TestCase):
+    def test_usb_bridge_verification_uses_katapult_query(self):
+        steps = usb_make_flash_steps({'artifact': {'path': '/tmp/firmware.bin'}}, '/home/pi/katapult/scripts/flashtool.py', 'can0', 'abc123')
+        command = next(step['command'] for step in steps if step['id'] == 'verify_klipper')
+        self.assertEqual(command, 'python3 /home/pi/katapult/scripts/flashtool.py -i can0 -q')
+
+    def test_query_missing_python_dependency_fails_without_retry(self):
+        result = {'flash': {'steps': [{'id': 'verify_klipper', 'status': 'pending'}]}}
+        with mock.patch('mcu_update_manager.flash_firmware.run_logged', return_value="ModuleNotFoundError: No module named 'can'") as run, \
+             mock.patch('mcu_update_manager.flash_firmware.write_result'), \
+             mock.patch('mcu_update_manager.flash_firmware.time.sleep') as sleep:
+            with self.assertRaisesRegex(ValueError, 'dependency error'):
+                run_verify_application_step(result, Path('result'), 'verify_klipper', ['python3'], Path('log'), 'abc123', 'klipper')
+            run.assert_called_once()
+            sleep.assert_not_called()
+            self.assertEqual(result['flash']['steps'][0]['status'], 'failed')
+
+    def test_configured_only_never_scans_usb_dfu_or_can(self):
+        with TemporaryDirectory() as tmpdir:
+            cfg = Path(tmpdir) / 'printer.cfg'
+            cfg.write_text('[mcu]\ncanbus_uuid: abc123\n', encoding='utf-8')
+            with mock.patch('mcu_update_manager.discovery.scan_serial_by_id') as usb, \
+                 mock.patch('mcu_update_manager.discovery.scan_usb_dfu_devices') as dfu, \
+                 mock.patch('mcu_update_manager.discovery.load_can_nodes') as can:
+                result = discover(DiscoverOptions(printer_cfg=str(cfg), moonraker_url=None,
+                                                  configured_only=True), profiles=[])
+            usb.assert_not_called()
+            dfu.assert_not_called()
+            can.assert_not_called()
+            self.assertEqual(result['devices'][0]['canbus_uuid'], 'abc123')
+            self.assertIsNone(result['discovery']['scanned_at'])
+
+    @mock.patch("mcu_update_manager.discovery.scan_usb_dfu_devices", return_value=[])
+    def test_discovery_preserves_embedded_mcu_kconfig_and_handles_legacy(self, _scan):
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            cfg = root / "printer.cfg"
+            cfg.write_text("[mcu]\nserial: /dev/example\n[mcu ebb]\ncanbus_uuid: abc123\n", encoding="utf-8")
+            objects = root / "objects.json"
+            objects.write_text(json.dumps({"mcu": {"mcu_kconfig": "CONFIG_MACH_STM32=y\n"},
+                                           "mcu ebb": {"mcu_kconfig": None}}), encoding="utf-8")
+            result = discover(DiscoverOptions(printer_cfg=str(cfg), printer_objects_json=str(objects),
+                                              moonraker_url=None, serial_dir=str(root / "missing")), profiles=[])
+        devices = {item["name"]: item for item in result["devices"]}
+        self.assertEqual(devices["mcu"]["mcu_kconfig"], "CONFIG_MACH_STM32=y\n")
+        self.assertIsNone(devices["ebb"]["mcu_kconfig"])
+
     def test_discovery_maps_cfg_runtime_and_profiles(self):
         profiles = load_profiles([ROOT / "profiles"])
         result = discover(
