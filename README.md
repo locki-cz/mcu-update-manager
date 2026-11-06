@@ -18,7 +18,34 @@ Example panel with mixed firmware versions; device status and versions vary by p
 
 ## Install on a printer
 
-SSH into the printer, then run:
+### 1. Install Aldis
+
+The current update workflow needs the [Aldis Moonraker agent](https://github.com/mjonuschat/aldis). If Aldis is already installed, do not overwrite it: check `~/aldis/aldis --version` and `~/aldis/aldis setup --check`, and follow its documentation for upgrades.
+
+For a new installation, SSH into the printer and run the following when it is idle. These commands install the official v0.4.0 binary and configure its systemd service and permissions; review the [Aldis setup instructions](https://github.com/mjonuschat/aldis#setup) first:
+
+```bash
+(
+set -eu
+test ! -e "$HOME/aldis/aldis" || { echo "Aldis is already installed; do not overwrite it."; exit 1; }
+mkdir -p ~/aldis
+curl -fL "https://github.com/mjonuschat/aldis/releases/download/v0.4.0/aldis-$(uname -m)-linux.tar.xz" -o /tmp/aldis-v0.4.0.tar.xz
+tar xJf /tmp/aldis-v0.4.0.tar.xz -C ~/aldis --strip-components=1
+chmod +x ~/aldis/aldis
+~/aldis/aldis --version
+sudo ~/aldis/aldis setup
+sudo ~/aldis/aldis setup --agent
+sudo systemctl restart moonraker
+~/aldis/aldis setup --check
+systemctl is-active aldis
+)
+```
+
+**USB-CAN bridge warning:** the official Aldis 0.4.0 binary may leave a bridge in Katapult and Klipper stopped during an update. The proposed fix linked above is not included in the official binary. Do not update a USB-CAN bridge with this version until you have checked the fix status and prepared recovery.
+
+### 2. Install MCU Update Manager
+
+On the printer, run:
 
 ```bash
 cd ~
@@ -55,8 +82,19 @@ Use **Custom hardware profile** in the Machine panel to create a profile from sc
 
 User profiles are stored under `~/printer_data/config/mcu_update_manager/profiles/`, outside this Git checkout, and survive `git pull`. Set `custom_profile_dir` in `mcu_update_manager.cfg` to use another location. These `.yaml` files contain JSON-formatted YAML so the built-in parser can read them even when PyYAML is unavailable. The branch currently supports only the processor and pin combinations understood by its automatic configuration generator; unsupported hardware still needs a reviewed catalog profile or manual firmware setup.
 
-The `v0.1.0-beta.3` release includes the custom-profile editor for Mainsail v2.19.0. The template list contains Klipper build profiles, not vendor firmware profiles such as Cartographer. Do not deploy or update during a print.
+The `v0.1.0-beta.4` release includes the custom-profile editor for Mainsail v2.19.0. The template list contains Klipper build profiles, not vendor firmware profiles such as Cartographer. Do not deploy or update during a print.
 
 The Moonraker component lives in [`mcu_update_manager/`](mcu_update_manager/) and registers `/machine/mcu_update_manager/*` endpoints. The UI is currently compiled into a Mainsail 2.19.0 build. [`frontend/`](frontend/README.md) contains the panel source and integration patch so the modified frontend can be inspected and rebuilt. This is **not** an official Mainsail plugin and is not affiliated with the Mainsail team.
 
-This project and the modified Mainsail frontend are distributed under GPL-3.0. Mainsail is by the [Mainsail Crew](https://github.com/mainsail-crew/mainsail); see the source repository for upstream credits.
+## Thanks and sources
+
+This project stands on the work, documentation and ideas of many people. A big thank you to all contributors and maintainers; without their work this project would not be possible. Links below distinguish the projects and references we have used from the code maintained here. None of these projects is affiliated with or endorses MCU Update Manager.
+
+- [Mainsail](https://github.com/mainsail-crew/mainsail), [Moonraker](https://github.com/Arksine/moonraker), [Klipper](https://github.com/Klipper3d/klipper) and [Kalico](https://github.com/KalicoCrew/kalico), for the host, API and firmware foundations.
+- [Aldis](https://github.com/mjonuschat/aldis) and [Katapult](https://github.com/Arksine/katapult), for MCU update and bootloader tooling.
+- [Esoterical's CAN bus guide](https://canbus.esoterical.online/) and [USB flashing guide](https://usb.esoterical.online/), for hardware configuration and flashing documentation.
+- [Cartographer firmware](https://github.com/Cartographer3D/cartographer_firmware) and [Cartographer documentation](https://docs.cartographer3d.com/), for vendor firmware and probe guidance.
+- [Mellow documentation](https://mellow-3d.github.io/), [FYSETC documentation](https://wiki.fysetc.com/) and [FYSETC ERB](https://github.com/FYSETC/FYSETC-ERB), [BIGTREETECH documentation](https://global.bttwiki.com/), and [Isik's Tech Ouroboros guide](https://docs.isiks.tech/Ouroboros/Firmware-Setup/), for hardware information.
+- [Klipper-EZFlash](https://github.com/Klipper-EZFlash/klipper-ezflash), [update_klipper_and_mcus](https://github.com/fbeauKmi/update_klipper_and_mcus), and [AFC-Klipper-Add-On](https://github.com/ArmoredTurtle/AFC-Klipper-Add-On), for workflow and integration inspiration.
+
+This project and the modified Mainsail frontend are distributed under GPL-3.0; see the upstream projects for their respective licenses and credits.
