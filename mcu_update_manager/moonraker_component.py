@@ -5,14 +5,22 @@ from typing import Any
 import asyncio
 import json
 import re
+import subprocess
 import sys
 from contextlib import suppress
+from contextlib import nullcontext
 from urllib.parse import quote
 from urllib.request import urlopen
 
 from .io_utils import atomic_write_json
+from .custom_profiles import get_profile, is_custom_profile, profile_fields, save_custom_profile
+from .build_plan import first_available_source
+from .devices import devices_by_id, load_devices
+from .hardware_options import processor_options
 from .operation_cache import finish_operation, is_active, mark_interrupted, new_operation, read_operation, write_operation
+from .profiles import automatic_build_ready, load_profiles
 from .status import latest_operation_for_device
+from .shared_lock import aldis_operation_lock
 
 
 def load_component(config: Any) -> "MCUUpdateManagerComponent":
@@ -34,6 +42,7 @@ class MCUUpdateManagerComponent:
         self.kalico_path = config.get("kalico_path", "~/kalico")
         self.cartographer_firmware_path = config.get("cartographer_firmware_path", "~/cartographer_firmware")
         self.profile_dirs = config.get("profile_dirs", "profiles")
+        self.custom_profile_dir = Path(config.get("custom_profile_dir", "~/printer_data/config/mcu_update_manager/profiles")).expanduser()
         self.build_root = config.get("build_root", "builds")
         self.artifact_root = config.get("artifact_root", "artifacts")
         self.cache_path = self.repo_path / config.get("cache_path", "cache/operation.json")
@@ -66,6 +75,21 @@ class MCUUpdateManagerComponent:
             self._handle_confirm,
         )
         self.server.register_endpoint(
+            "/machine/mcu_update_manager/profile",
+            ["GET"],
+            self._handle_get_profile,
+        )
+        self.server.register_endpoint(
+            "/machine/mcu_update_manager/profile/options",
+            ["GET"],
+            self._handle_profile_options,
+        )
+        self.server.register_endpoint(
+            "/machine/mcu_update_manager/profile/save",
+            ["POST"],
+            self._handle_save_profile,
+        )
+        self.server.register_endpoint(
             "/machine/mcu_update_manager/switch_firmware_ref",
             ["POST"],
             self._handle_switch_firmware_ref,
@@ -74,6 +98,11 @@ class MCUUpdateManagerComponent:
             "/machine/mcu_update_manager/build",
             ["POST"],
             self._handle_build,
+        )
+        self.server.register_endpoint(
+            "/machine/mcu_update_manager/update_legacy",
+            ["POST"],
+            self._handle_update_legacy,
         )
         self.server.register_endpoint(
             "/machine/mcu_update_manager/flash",
@@ -108,10 +137,23 @@ class MCUUpdateManagerComponent:
 
     async def _handle_status(self, web_request: Any) -> dict[str, Any]:
         refresh = web_request.get_str("refresh_repositories", "false").lower() == "true"
+        configured_only = web_request.get_str("configured_only", "false").lower() == "true"
         command = self._status_command()
         if refresh:
             command.append("--refresh-repositories")
-        return await self._run_json(command)
+        if configured_only:
+            command.append("--configured-only")
+        result = await self._run_json(command)
+        scan_cache = self.repo_path / "cache" / "last-scan.json"
+        if configured_only:
+            try:
+                result["discovery"]["scanned_at"] = json.loads(scan_cache.read_text(encoding="utf-8")).get("scanned_at")
+            except (OSError, ValueError, AttributeError, KeyError):
+                pass
+        else:
+            with suppress(OSError):
+                atomic_write_json(scan_cache, {"scanned_at": result.get("discovery", {}).get("scanned_at")})
+        return result
 
     async def _handle_operation(self, _web_request: Any) -> dict[str, Any]:
         cached = read_operation(self.cache_path)
@@ -154,8 +196,20 @@ class MCUUpdateManagerComponent:
     async def _handle_confirm(self, web_request: Any) -> dict[str, Any]:
         device_id = web_request.get_str("device_id")
         profile_id = web_request.get_str("profile_id")
+        profile = get_profile(load_profiles(self._profile_paths()), profile_id)
         discovery_path = self.repo_path / "discovery.json"
         discovery = await self._run_json(self._discover_command())
+        selected = next((item for item in discovery.get("devices", []) if item.get("id") == device_id), None)
+        if selected is None:
+            raise self.server.error(f"Device not found in discovery: {device_id}")
+        chip = str(selected.get("detected_chip") or "").lower()
+        transport = str(selected.get("transport") or "").lower()
+        chips = [str(item).lower() for item in profile.match.get("chips", [])]
+        transports = [str(item).lower() for item in profile.match.get("transports", [])]
+        if chip and chips and chip not in chips:
+            raise self.server.error(f"Profile {profile_id} is for {', '.join(chips)}, not {chip}.")
+        if transport != "dfu" and transport and transports and transport not in transports:
+            raise self.server.error(f"Profile {profile_id} does not support {transport}.")
         atomic_write_json(discovery_path, discovery)
 
         result = await self._run_json(
@@ -173,6 +227,33 @@ class MCUUpdateManagerComponent:
             ]
         )
         return {"status": "ok", "result": result}
+
+    async def _handle_get_profile(self, web_request: Any) -> dict[str, Any]:
+        profile = get_profile(load_profiles(self._profile_paths()), web_request.get_str("profile_id"))
+        return {
+            "id": profile.id,
+            "custom": is_custom_profile(profile, self.custom_profile_dir),
+            "fields": profile_fields(profile),
+        }
+
+    async def _handle_profile_options(self, web_request: Any) -> dict[str, Any]:
+        return {"processors": processor_options()}
+
+    async def _handle_save_profile(self, web_request: Any) -> dict[str, Any]:
+        if (self.active_task and not self.active_task.done()) or is_active(read_operation(self.cache_path)):
+            raise self.server.error("A firmware operation is running. Save the profile after it finishes.")
+        try:
+            fields = json.loads(web_request.get_str("fields_json"))
+            result = save_custom_profile(
+                self._profile_paths(),
+                self.custom_profile_dir,
+                fields,
+                template_id=web_request.get_str("template_id", "") or None,
+                profile_id=web_request.get_str("profile_id", "") or None,
+            )
+        except (ValueError, OSError, json.JSONDecodeError) as exc:
+            raise self.server.error(str(exc)) from exc
+        return {"status": "ok", "profile": result}
 
     async def _handle_switch_firmware_ref(self, web_request: Any) -> dict[str, Any]:
         await self._ensure_not_printing()
@@ -322,6 +403,70 @@ class MCUUpdateManagerComponent:
             ]
         )
 
+    async def _handle_update_legacy(self, web_request: Any) -> dict[str, Any]:
+        await self._ensure_not_printing()
+        device_id = web_request.get_str("device_id")
+        if not device_id or sanitize_path_part(device_id) != device_id or device_id in {".", ".."}:
+            raise self.server.error("Invalid device ID.")
+        command = [*self._base_command(), "build-firmware", "--device", device_id,
+                   "--firmware-ref", "current", "--devices-path", self.devices_path,
+                   "--discovery-json", str(self.repo_path / "discovery.json"), *self._profile_args(),
+                   "--klipper-path", self.klipper_path, "--kalico-path", self.kalico_path,
+                   "--build-root", self.build_root, "--artifact-root", self.artifact_root,
+                   "--can-bitrate", self.can_bitrate, "--execute"]
+        return await self._start_operation("legacy_update", device_id, command)
+
+    async def _validate_legacy_device(self, device_id: str) -> dict[str, Any]:
+        discovery = await self._run_json(self._discover_command())
+        device = next((item for item in discovery.get("devices", []) if item.get("id") == device_id), None)
+        saved = devices_by_id(load_devices(self.repo_path / self.devices_path)).get(device_id)
+        if not device or not saved or saved.get("confirmed_by_user") is not True:
+            raise RuntimeError("Device and its hardware profile must be explicitly confirmed.")
+        profile = get_profile(load_profiles(self._profile_paths()), str(saved.get("confirmed_profile") or ""))
+        if not automatic_build_ready(profile.build) or device.get("vendor_firmware"):
+            raise RuntimeError("This profile is not ready for a standard firmware build.")
+        if not device.get("firmware_version") or device.get("mcu_kconfig") is not None:
+            raise RuntimeError("A connected legacy MCU without embedded build configuration is required.")
+        source = first_available_source((discovery.get("firmware_source") or {}).get("repositories") or {})
+        if not source or not source_supports_embedded_config(source.get("path")):
+            raise RuntimeError("The current firmware source does not provide embedded MCU configuration; update the host source before flashing.")
+        transport = device.get("transport")
+        supported_transports = [str(value).lower() for value in profile.match.get("transports", [])]
+        if transport not in supported_transports:
+            raise RuntimeError("The connected device transport is not supported by the confirmed profile.")
+        communication = profile.build.get("communication")
+        if (transport == "can" and communication not in {"canbus", "usb_to_canbus_bridge"}) or (
+            transport == "usb" and communication != "usb"
+        ):
+            raise RuntimeError("The confirmed firmware communication does not match the connected device.")
+        identity_key = "canbus_uuid" if transport == "can" else "serial" if transport == "usb" else None
+        if not identity_key or not saved.get(identity_key) or saved.get(identity_key) != device.get(identity_key):
+            raise RuntimeError("Device identity does not match its confirmed configuration.")
+        if transport == "can":
+            interface = str(device.get("can_interface") or "")
+            if saved.get("can_interface") and saved.get("can_interface") != interface:
+                raise RuntimeError("CAN interface differs from the confirmed device.")
+            if not re.fullmatch(r"[A-Za-z0-9_.-]{1,15}", interface):
+                raise RuntimeError("Invalid CAN interface.")
+            try:
+                link = await asyncio.to_thread(subprocess.run, ["ip", "-details", "link", "show", "dev", interface],
+                                               capture_output=True, text=True, timeout=5, check=False)
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                raise RuntimeError(f"Cannot verify CAN bitrate: {exc}") from exc
+            match = re.search(r"\bbitrate\s+(\d+)\b", link.stdout)
+            if link.returncode or not match or match.group(1) != str(self.can_bitrate):
+                raise RuntimeError(f"CAN bitrate cannot be verified or differs from build setting {self.can_bitrate}.")
+        chip = str(device.get("detected_chip") or "").lower()
+        if not chip or chip not in [str(value).lower() for value in profile.match.get("chips", [])]:
+            raise RuntimeError("The connected MCU chip does not match the confirmed profile.")
+        method = str(profile.flash.get("method") or "")
+        if (transport == "can" and method not in {"can_katapult", "usb_katapult_or_make_flash"}) or (
+            transport == "usb" and method not in {"klipper_make_flash_usb", "usb_make_flash"}
+        ):
+            raise RuntimeError("The confirmed profile has no supported automatic flash method for this device.")
+        atomic_write_json(self.repo_path / "discovery.json", discovery)
+        return {"id": device_id, "identity": device[identity_key], "profile": profile.id, "chip": chip}
+
     async def _handle_flash(self, web_request: Any) -> dict[str, Any]:
         await self._ensure_not_printing()
         device_id = web_request.get_str("device_id")
@@ -355,6 +500,8 @@ class MCUUpdateManagerComponent:
                 self.katapult_path,
                 "--artifact-manifest",
                 str(artifact_manifest),
+                "--moonraker-url",
+                self.moonraker_url,
                 "--execute",
             ]
         )
@@ -460,6 +607,8 @@ class MCUUpdateManagerComponent:
             "--serial-dir",
             self.serial_dir,
             *self._profile_args(),
+            "--custom-profile-dir",
+            str(self.custom_profile_dir),
             "--can-interface",
             self.can_interface,
             "--can-bitrate",
@@ -510,8 +659,19 @@ class MCUUpdateManagerComponent:
         return [python, "-m", "mcu_update_manager.cli"]
 
     def _profile_args(self) -> list[str]:
-        paths = [item.strip() for item in self.profile_dirs.split(",") if item.strip()]
-        return ["--profiles", *paths]
+        return ["--profiles", *self._profile_paths()]
+
+    def _profile_paths(self) -> list[str]:
+        paths = []
+        for item in self.profile_dirs.split(","):
+            if not item.strip():
+                continue
+            path = Path(item.strip()).expanduser()
+            paths.append(str(path if path.is_absolute() else self.repo_path / path))
+        custom = str(self.custom_profile_dir)
+        if custom not in paths:
+            paths.append(custom)
+        return paths
 
     async def _run_json(self, command: list[str]) -> dict[str, Any]:
         process = await asyncio.create_subprocess_exec(
@@ -560,12 +720,15 @@ class MCUUpdateManagerComponent:
         write_operation(self.cache_path, operation)
         try:
             async with self.operation_lock:
-                if operation["action"] in {
-                    "switch_firmware_ref", "flash", "cartographer_flash",
-                    "cartographer_usb_to_can", "cartographer_dfu_flash", "dfu_flash",
-                }:
-                    await self._ensure_not_printing()
-                result = await self._run_json(command)
+                lock_actions = {"switch_firmware_ref", "build", "flash", "legacy_update", "cartographer_flash",
+                                "cartographer_usb_to_can", "cartographer_dfu_flash", "dfu_flash"}
+                with aldis_operation_lock() if operation["action"] in lock_actions else nullcontext():
+                    if operation["action"] in lock_actions - {"build"}:
+                        await self._ensure_not_printing()
+                    if operation["action"] == "legacy_update":
+                        result = await self._run_legacy_update(operation, command)
+                    else:
+                        result = await self._run_json(command)
             status = operation_result_status(result)
             finish_operation(
                 self.cache_path,
@@ -580,6 +743,41 @@ class MCUUpdateManagerComponent:
         except Exception as exc:
             finish_operation(self.cache_path, operation, status="failed", error=str(exc))
 
+    async def _run_legacy_update(self, operation: dict[str, Any], command: list[str]) -> dict[str, Any]:
+        device_id = str(operation["device_id"])
+        operation["phase"] = "checking"
+        write_operation(self.cache_path, operation)
+        before = await self._validate_legacy_device(device_id)
+        operation["phase"] = "building"
+        write_operation(self.cache_path, operation)
+        result = await self._run_json(command)
+        build = result.get("build") or {}
+        if build.get("status") != "ok":
+            return result
+        try:
+            running_version = await asyncio.to_thread(query_running_host_version, self.moonraker_url)
+        except Exception as exc:
+            raise RuntimeError(f"Cannot verify running host version: {exc}") from exc
+        built_version = (result.get("firmware_source") or {}).get("current_version")
+        if not running_version or running_version != built_version:
+            raise RuntimeError("Built firmware version does not match the running host; flash was not started.")
+        if not source_supports_embedded_config((result.get("firmware_source") or {}).get("path")):
+            raise RuntimeError("The running firmware source does not provide embedded MCU configuration; update the host source before flashing.")
+        manifest = build.get("artifact_manifest")
+        if not manifest or not Path(str(manifest)).is_file():
+            raise RuntimeError("Build succeeded without a valid artifact manifest; flash was not started.")
+        await self._ensure_not_printing()
+        after = await self._validate_legacy_device(device_id)
+        if before != after:
+            raise RuntimeError("The device or confirmed profile changed during the build; flash was not started.")
+        operation["phase"] = "flashing"
+        write_operation(self.cache_path, operation)
+        flash_command = [*self._base_command(), "flash-firmware", "--device", device_id,
+                         "--devices-path", self.devices_path, "--discovery-json", str(self.repo_path / "discovery.json"),
+                         *self._profile_args(), "--katapult-path", self.katapult_path,
+                         "--artifact-manifest", str(manifest), "--moonraker-url", self.moonraker_url, "--execute"]
+        return await self._run_json(flash_command)
+
     async def close(self) -> None:
         if not self.active_task or self.active_task.done():
             return
@@ -590,6 +788,23 @@ class MCUUpdateManagerComponent:
 
 def sanitize_path_part(value: str) -> str:
     return "".join(char if char.isalnum() or char in ("-", "_", ".") else "_" for char in value)
+
+
+def query_running_host_version(moonraker_url: str) -> str | None:
+    with urlopen(moonraker_url.rstrip("/") + "/printer/info", timeout=5) as response:
+        return json.load(response).get("result", {}).get("software_version")
+
+
+def source_supports_embedded_config(path: str | None) -> bool:
+    if not path:
+        return False
+    source = Path(path).expanduser()
+    checks = (("klippy/mcu.py", "mcu_kconfig"), ("klippy/msgproto.py", "get_kconfig"),
+              ("scripts/buildcommands.py", "kconfig"), ("Makefile", "savedefconfig"))
+    try:
+        return all(marker in (source / name).read_text(encoding="utf-8") for name, marker in checks)
+    except (OSError, UnicodeError):
+        return False
 
 
 def operation_result_status(result: dict[str, Any]) -> str:

@@ -56,7 +56,8 @@ def create_flash_plan(
     }
     flashtool = katapult.get("flashtool") or str(Path(katapult_path or "~/katapult").expanduser() / "scripts" / "flashtool.py")
     artifact_info = inspect_artifact(artifact_path)
-    manifest_checks = check_manifest(manifest, device_id, profile_id, uuid, serial, artifact_path, artifact_info)
+    profile_digest = hashlib.sha256(Path(profile.path).read_bytes()).hexdigest()
+    manifest_checks = check_manifest(manifest, device_id, profile_id, uuid, serial, artifact_path, artifact_info, profile_digest)
 
     if flash_method == "can_katapult":
         commands = flash_commands(flashtool, can_interface, str(uuid), artifact_path)
@@ -211,7 +212,7 @@ def usb_make_flash_steps(manifest: dict[str, Any] | None, flashtool: str, can_in
         {
             "id": "verify_klipper",
             "label": "Verify CAN UUID after reboot",
-            "command": f"python3 {firmware_repo_path(manifest)}/scripts/canbus_query.py {can_interface}",
+            "command": f"python3 {flashtool} -i {can_interface} -q",
             "expect": f"UUID {uuid} should report application Klipper.",
         },
         {
@@ -241,7 +242,7 @@ def usb_make_flash_commands(manifest: dict[str, Any] | None, flashtool: str, can
         f"python3 {flashtool} -i {can_interface} -r -u {uuid}",
         "wait for /dev/serial/by-id/usb-katapult*",
         f"python3 {flashtool} -f {artifact_path} -d <usb-katapult-serial>",
-        f"python3 {firmware_repo_path(manifest)}/scripts/canbus_query.py {can_interface}",
+        f"python3 {flashtool} -i {can_interface} -q",
         "sudo -n systemctl start klipper",
     ]
 
@@ -306,6 +307,7 @@ def check_manifest(
     serial: str | None,
     artifact_path: str,
     artifact_info: dict[str, Any],
+    profile_digest: str,
 ) -> dict[str, Any]:
     if not manifest:
         return {
@@ -320,6 +322,9 @@ def check_manifest(
         "artifact_path": str(manifest.get("artifact", {}).get("path")) == artifact_path,
         "artifact_sha256": True if not manifest_sha else manifest_sha == artifact_info.get("sha256"),
     }
+    saved_digest = manifest.get("profile", {}).get("digest")
+    if saved_digest:
+        checks["profile_digest"] = saved_digest == profile_digest
     if uuid:
         checks["canbus_uuid"] = manifest.get("device", {}).get("canbus_uuid") == uuid
     else:

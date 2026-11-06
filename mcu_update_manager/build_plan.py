@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 import json
+import hashlib
 
 from .devices import devices_by_id, load_devices
 from .firmware_source import inspect_firmware_sources
@@ -83,6 +84,7 @@ def create_build_plan(
         "profile": {
             "id": profile.id,
             "name": profile.name,
+            "digest": hashlib.sha256(Path(profile.path).read_bytes()).hexdigest(),
             "build": rendered_build,
             "flash": profile.flash,
         },

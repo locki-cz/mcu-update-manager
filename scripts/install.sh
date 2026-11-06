@@ -6,7 +6,7 @@ MAINSAIL_DIR=${MAINSAIL_DIR:-$HOME/mainsail}
 MOONRAKER_DIR=${MOONRAKER_DIR:-$HOME/moonraker}
 MOONRAKER_CONF=${MOONRAKER_CONF:-$HOME/printer_data/config/moonraker.conf}
 COMPONENT="$MOONRAKER_DIR/moonraker/components/mcu_update_manager.py"
-RELEASE_TAG=v0.1.0-beta.1
+RELEASE_TAG=v0.1.0-beta.4
 ASSET=mainsail-mcu-v2.19.0.tar.gz
 DOWNLOAD_URL="https://github.com/locki-cz/mcu-update-manager/releases/download/$RELEASE_TAG/$ASSET"
 INCLUDE='[include ~/mcu-update-manager/mcu_update_manager.cfg]'
@@ -26,7 +26,7 @@ if [[ "$installed_version" != 'v2.19.0' ]]; then
     printf 'This beta UI requires Mainsail v2.19.0; found: %s. Nothing was installed.\n' "${installed_version:-unknown}" >&2
     exit 1
 fi
-for command in curl tar python3; do
+for command in curl tar python3 readlink; do
     command -v "$command" >/dev/null || { echo "Missing command: $command" >&2; exit 1; }
 done
 
@@ -54,10 +54,10 @@ if [[ -e "$COMPONENT" || -L "$COMPONENT" ]]; then
 fi
 printf 'Backups: %s\n' "$backup_dir"
 
-# --remove-destination replaces an old symlink instead of following it into the backend module.
-cp --remove-destination "$REPO_DIR/moonraker_component_entry.py" "$COMPONENT"
-if [[ -L "$COMPONENT" ]]; then
-    echo 'Moonraker entry is still a symlink; refusing to continue.' >&2
+# Keep the entry point linked to the checkout so backend updates cannot leave a stale copy in Moonraker.
+ln -sfn "$REPO_DIR/moonraker_component_entry.py" "$COMPONENT"
+if [[ "$(readlink -f "$COMPONENT")" != "$REPO_DIR/moonraker_component_entry.py" ]]; then
+    echo 'Moonraker entry does not resolve to this checkout; refusing to continue.' >&2
     exit 1
 fi
 if ! grep -Fqx "$INCLUDE" "$MOONRAKER_CONF"; then

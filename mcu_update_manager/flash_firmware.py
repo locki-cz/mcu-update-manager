@@ -9,8 +9,10 @@ import shutil
 import subprocess
 import threading
 import time
+from urllib.parse import quote
+from urllib.request import urlopen
 
-from .flash_plan import create_flash_plan
+from .flash_plan import create_flash_plan, load_manifest
 from .flash_plan import file_sha256
 from .io_utils import atomic_write_json
 
@@ -24,6 +26,7 @@ def flash_firmware(
     artifact: str | Path | None = None,
     artifact_manifest: str | Path | None = None,
     execute: bool = False,
+    moonraker_url: str = "http://127.0.0.1:7125",
 ) -> dict[str, Any]:
     try:
         plan = create_flash_plan(
@@ -99,9 +102,12 @@ def flash_firmware(
             update_step_command(result, "flash_firmware", updated_flash_command)
             write_result(flash_result, result)
 
+        needs_runtime_verification = False
         if flash_method in {"klipper_make_flash_usb", "usb_make_flash"}:
-            run_step(result, flash_result, "flash_firmware", command_words(plan, "flash_firmware"), flash_log,
+            flash_command = command_words(plan, "flash_firmware")
+            output = run_step(result, flash_result, "flash_firmware", flash_command, flash_log,
                      timeout=240, cwd=Path(str(plan["firmware_source"]["path"])))
+            needs_runtime_verification = is_flash_usb_leave_error(flash_command, output)
             run_step(result, flash_result, "verify_usb", command_words(plan, "verify_usb"), flash_log, timeout=5, retries=22)
         else:
             run_step(result, flash_result, "flash_firmware", command_words(plan, "flash_firmware"), flash_log, timeout=240)
@@ -118,14 +124,20 @@ def flash_firmware(
         )
         require_service_state("klipper", "active", flash_log)
         stopped_klipper = False
+        if needs_runtime_verification:
+            result["flash"]["steps"].append({"id": "verify_runtime", "label": "Verify MCU firmware in Klipper", "status": "pending"})
+            write_result(flash_result, result)
+            verify_usb_runtime(result, flash_result, flash_log, moonraker_url, load_manifest(artifact_manifest))
+            result["flash"]["warning"] = "DFU leave returned an error after download; USB and running firmware version were verified, but flash contents were not read back."
         result["status"] = "ok"
         result["flash"]["status"] = "ok"
         result["flash"]["completed_at"] = now_iso()
-        try:
-            mark_last_good_artifact(flash_dir, result)
-        except (OSError, RuntimeError) as backup_error:
-            result["flash"]["backup_warning"] = str(backup_error)
-            append_log(flash_log, f"\n# Last-good backup failed: {backup_error}\n")
+        if not needs_runtime_verification:
+            try:
+                mark_last_good_artifact(flash_dir, result)
+            except (OSError, RuntimeError) as backup_error:
+                result["flash"]["backup_warning"] = str(backup_error)
+                append_log(flash_log, f"\n# Last-good backup failed: {backup_error}\n")
         finish_steps(result, "ok")
     except Exception as exc:
         result["flash"]["status"] = "failed"
@@ -318,6 +330,10 @@ def run_verify_application_step(result: dict[str, Any], metadata_path: Path, ste
     while time.monotonic() < deadline:
         try:
             output = run_logged(command, log_path, timeout=10, allow_nonzero=True)
+            if "ModuleNotFoundError:" in output or "ImportError:" in output:
+                mark_step(result, step_id, "failed")
+                write_result(metadata_path, result)
+                raise ValueError(f"CAN verification could not start due to a Python dependency error: {output.strip()}")
             require_query_application(output, uuid, application)
             mark_step(result, step_id, "done")
             write_result(metadata_path, result)
@@ -328,6 +344,39 @@ def run_verify_application_step(result: dict[str, Any], metadata_path: Path, ste
     mark_step(result, step_id, "failed")
     write_result(metadata_path, result)
     raise RuntimeError(f"Could not verify UUID {uuid} as {application} within {timeout}s: {last_error}")
+
+
+def verify_usb_runtime(result: dict[str, Any], metadata_path: Path, log_path: Path,
+                       moonraker_url: str, manifest: dict[str, Any] | None, timeout: int = 45) -> None:
+    device = result.get("device") or {}
+    section = device.get("mcu_section")
+    expected_version = ((manifest or {}).get("firmware_source") or {}).get("current_version")
+    expected_chip = device.get("detected_chip")
+    if not section or not expected_version or not expected_chip:
+        raise RuntimeError("Cannot verify USB firmware: MCU section, expected version or chip is missing.")
+    mark_step(result, "verify_runtime", "running")
+    write_result(metadata_path, result)
+    url = moonraker_url.rstrip("/") + "/printer/objects/query?" + quote(str(section), safe="")
+    deadline = time.monotonic() + timeout
+    detail = "MCU not yet connected"
+    while time.monotonic() < deadline:
+        try:
+            with urlopen(url, timeout=3) as response:
+                state = json.load(response).get("result", {}).get("status", {}).get(section, {})
+            version = state.get("mcu_version")
+            chip = (state.get("mcu_constants") or {}).get("MCU")
+            if version == expected_version and chip == expected_chip:
+                append_log(log_path, f"\n# Verified {section}: version {version}, MCU {chip}. Flash readback was not performed.\n")
+                mark_step(result, "verify_runtime", "done")
+                write_result(metadata_path, result)
+                return
+            detail = f"reported version={version!r}, MCU={chip!r}"
+        except Exception as exc:
+            detail = str(exc)
+        time.sleep(2)
+    mark_step(result, "verify_runtime", "failed")
+    write_result(metadata_path, result)
+    raise RuntimeError(f"DFU download finished but running MCU could not be verified: {detail}")
 
 
 def mark_step(result: dict[str, Any], step_id: str, status: str, *, attempt: int | None = None, attempts: int | None = None) -> None:
@@ -427,13 +476,21 @@ def run_logged(command: list[str], log_path: Path, *, timeout: int, allow_nonzer
 
 
 def benign_stm32_leave_error(command: list[str], output: str) -> bool:
-    return (
-        "flash" in command
-        and any("FLASH_DEVICE=" in part for part in command)
-        and "File downloaded successfully" in output
-        and "Submitting leave request" in output
-        and "Error during download get_status" in output
-    )
+    make_flash = "flash" in command and any("FLASH_DEVICE=" in part for part in command)
+    return (make_flash or is_flash_usb_leave_error(command, output)) and has_dfu_leave_error(output)
+
+
+def has_dfu_leave_error(output: str) -> bool:
+    download = output.find("File downloaded successfully")
+    leave = output.find("Submitting leave request", download + 1)
+    error = output.find("dfu-util: Error during download get_status", leave + 1)
+    return download >= 0 and leave > download and error > leave
+
+
+def is_flash_usb_leave_error(command: list[str], output: str) -> bool:
+    return (len(command) > 2 and Path(command[1]).name == "flash_usb.py"
+            and "-t" in command and any(part.startswith("stm32") for part in command)
+            and "-d" in command and "-s" in command and has_dfu_leave_error(output))
 
 
 def write_result(path: Path, result: dict[str, Any]) -> None:

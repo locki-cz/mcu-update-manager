@@ -101,6 +101,7 @@ def automatic_build_ready(config: dict[str, Any]) -> bool:
 
 def load_profiles(paths: list[str | Path]) -> list[HardwareProfile]:
     profiles: list[HardwareProfile] = []
+    ids: dict[str, str] = {}
     for profile_dir in paths:
         root = Path(profile_dir).expanduser()
         if not root.exists():
@@ -110,7 +111,12 @@ def load_profiles(paths: list[str | Path]) -> list[HardwareProfile]:
             data = load_simple_yaml(file)
             entries = data.get("profiles", [data])
             for entry in entries:
-                profiles.append(profile_from_data(entry, file))
+                profile = profile_from_data(entry, file)
+                key = profile.id.casefold()
+                if key in ids:
+                    raise ValueError(f"Duplicate profile ID {profile.id!r}: {ids[key]} and {file}")
+                ids[key] = str(file)
+                profiles.append(profile)
 
     return profiles
 
@@ -164,12 +170,15 @@ def normalize_pin(pin: str) -> str:
 
 
 def load_simple_yaml(path: str | Path) -> dict[str, Any]:
+    content = Path(path).read_text(encoding="utf-8")
+    if content.lstrip().startswith("{"):
+        return json.loads(content)
     try:
         import yaml  # type: ignore
 
-        return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+        return yaml.safe_load(content)
     except ModuleNotFoundError:
-        return _load_yaml_subset(Path(path).read_text(encoding="utf-8"))
+        return _load_yaml_subset(content)
 
 
 def _load_yaml_subset(text: str) -> dict[str, Any]:

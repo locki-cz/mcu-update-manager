@@ -28,6 +28,7 @@ bootloader:
   communication: canbus
   can_bitrate: "{{ can_bitrate }}"
   recommended: true
+  requires_manual_menuconfig: true
 initial_flash:
   method: rp2040_bootsel_make_flash
   boot_vid_pid: "2e8a:0003"
